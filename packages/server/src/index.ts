@@ -19,6 +19,7 @@ import {
 } from './helpers/bitcoind-watcher';
 import { errorString } from './helpers/error';
 import { WatchedTransactionsModel } from './models/watched-transactions';
+import { WatchedAddressesModel } from './models/watched-addresses';
 
 declare global {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -128,6 +129,7 @@ app.use((err, _req, res, _next) => {
       }
     },
   );
+  const watchedAddresses = await WatchedAddressesModel.find({});
   const transactions = await WatchedTransactionsModel.find({});
   const analysisByTxid = new Map<string, TransactionAnalysis>(transactions.map((transaction) => [
     transaction.txid,
@@ -149,6 +151,7 @@ app.use((err, _req, res, _next) => {
   await bitcoindWatcher.start(
     settings.analyzedBlockHashes ?? [],
     [...analysisByTxid.entries()],
+    [...new Set(watchedAddresses.map(({ address }) => address))],
   );
   const watchRebootUsers = await UsersModel.find({ watchReboot: true });
   for await (const user of watchRebootUsers) {

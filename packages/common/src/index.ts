@@ -18,6 +18,10 @@ export enum BotCommandName {
   UnwatchTransactions = 'unwatchtransactions',
   Wtx = 'wtx',
   Uwtxs = 'uwtxs',
+  WatchAddresses = 'watchaddresses',
+  UnwatchAddresses = 'unwatchaddresses',
+  Wads = 'wads',
+  Uwads = 'uwads',
   ListWatches = 'listwatches',
   MempoolLinks = 'mempoollinks',
 }
@@ -66,6 +70,26 @@ export const telegramCommands: BotCommand[] = [
   {
     command: BotCommandName.Uwtxs,
     description: `Short for /${BotCommandName.UnwatchTransactions}.`,
+  },
+  {
+    command: BotCommandName.WatchAddresses,
+    description: [
+      'Get notification when a transaction spending to the given addresses is added to the',
+      'mempool or confirmed. Get notification when a transaction spending from the given',
+      'addresses is confirmed (but not when it is only added to the mempool).',
+    ].join(' '),
+  },
+  {
+    command: BotCommandName.Wads,
+    description: `Short for /${BotCommandName.WatchAddresses}.`,
+  },
+  {
+    command: BotCommandName.UnwatchAddresses,
+    description: 'Stop getting notifications about one or more addresses.',
+  },
+  {
+    command: BotCommandName.Uwads,
+    description: `Short for /${BotCommandName.UnwatchAddresses}.`,
   },
   {
     command: BotCommandName.MempoolLinks,

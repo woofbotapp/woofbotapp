@@ -4,10 +4,11 @@ import { validate } from 'bitcoin-address-validation';
 
 import { SettingsModel } from '../models/settings';
 import { defaultUserProperties, UsersModel, UserDocument } from '../models/users';
+import { WatchedAddressesModel } from '../models/watched-addresses';
 import { TransactionStatus, WatchedTransactionsModel } from '../models/watched-transactions';
 import {
   bitcoindWatcher, BitcoindWatcherEventName, NewTransactionAnalysisEvent, TransactionAnalysis,
-  transactionAnalysisToString,
+  transactionAnalysisToString, NewAddressPaymentEvent,
 } from './bitcoind-watcher';
 import { errorString } from './error';
 import logger from './logger';
@@ -76,6 +77,14 @@ class TelegrafManager {
       (parameters) => this.onNewTransactionAnalysis(parameters),
     );
     bitcoindWatcher.on(
+      BitcoindWatcherEventName.NewAddressPayment,
+      (parameters) => this.onNewAddressPayment(parameters),
+    );
+    bitcoindWatcher.on(
+      BitcoindWatcherEventName.AddressOverload,
+      (address) => this.onAddressOverload(address),
+    );
+    bitcoindWatcher.on(
       BitcoindWatcherEventName.BlocksSkipped,
       () => this.onBlocksSkipped(),
     );
@@ -91,12 +100,16 @@ class TelegrafManager {
         return;
       }
       const transactions = await WatchedTransactionsModel.find({});
-      if (transactions.length === 0) {
-        return;
-      }
+      const addresses = await WatchedAddressesModel.find({});
+      const userIds = [
+        ...new Map([
+          ...transactions.map(({ userId }) => userId),
+          ...addresses.map(({ userId }) => userId),
+        ].map((userId) => [`${userId}`, userId])).values(),
+      ];
       const users = await UsersModel.find({
         _id: {
-          $in: transactions.map(({ userId }) => userId),
+          $in: userIds,
         },
       });
       await Promise.all(
@@ -104,12 +117,141 @@ class TelegrafManager {
           chatId: user.telegramChatId,
           text: escapeMarkdown([
             '⚠️ Woof! It seems that your node was not synced for some time, and some blocks were',
-            'not analyzed. It is recommended to check the status of your transactions manually.',
+            'not analyzed. It is recommended to check the status of your addresses and',
+            'transactions manually.',
           ].join(' ')),
         })),
       );
     } catch (error) {
       logger.error(`TelegrafManager: failed to handle onBlocksSkipped: ${errorString(error)}`);
+    }
+  }
+
+  private async onNewAddressPayment({
+    address,
+    txid,
+    status,
+    confirmations,
+    multiAddress,
+    incomeSats,
+    outcomeSats,
+  }: NewAddressPaymentEvent) {
+    try {
+      logger.info(`onNewAddressPayment: ${address} ${txid}`);
+      const watchedAddresses = await WatchedAddressesModel.find({ address });
+      if (watchedAddresses.length === 0) {
+        // safety check
+        bitcoindWatcher.unwatchAddress(address);
+        return;
+      }
+      const users = await UsersModel.find({
+        _id: {
+          $in: watchedAddresses.map(({ userId }) => userId),
+        },
+      });
+      const userById = new Map(users.map((user) => [`${user.id}`, user]));
+      logger.info(`TelegrafManager: Notifying users about new address payment ${
+        address
+      } ${txid}: ${users.map((user) => user.id).join(', ')}`);
+      for await (const watchedAddress of watchedAddresses) {
+        const user = userById.get(`${watchedAddress.userId}`);
+        if (!user) {
+          continue;
+        }
+        const messages: string[] = [];
+        const addressName = watchedAddress.nickname
+          ? `${watchedAddress.nickname} (${watchedAddress.address})`
+          : `${watchedAddress.address}`;
+
+        if (incomeSats !== undefined) {
+          messages.push(
+            `Address ${addressName} ${
+              (status === TransactionStatus.FullConfirmation) ? 'has received' : 'is receiving'
+            } ${incomeSats} sats by transaction ${txid}.`,
+          );
+        }
+        if (outcomeSats !== undefined) {
+          messages.push(
+            `Address ${addressName} ${
+              (status === TransactionStatus.FullConfirmation) ? 'has sent' : 'is sending'
+            } ${outcomeSats} sats by transaction ${txid}.`,
+          );
+        }
+        switch (status) {
+          case TransactionStatus.PartialConfirmation:
+            messages.push(
+              `This transaction has ${confirmations} ${
+                (confirmations === 1) ? 'confirmation' : 'confirmations'
+              } and is not yet fully confirmed.`,
+            );
+            break;
+          case TransactionStatus.FullConfirmation:
+            messages.push(
+              `🚀 This transaction has ${confirmations} ${
+                (confirmations === 1) ? 'confirmation' : 'confirmations'
+              } and is fully confirmed.`,
+            );
+            break;
+          default:
+            messages.push(`This transaction is only in the mempool.`);
+        }
+        if (multiAddress) {
+          messages.push([
+            '\n⚠️ Notice that one of the transaction outputs is an old m-of-n non-P2SH multisig',
+            'script, a format that is rarely used today, meaning that different other addresses',
+            'might be able to spend the funds.',
+          ].join(' '));
+        }
+        await this.sendMessage({
+          chatId: user.telegramChatId,
+          text: escapeMarkdown(`Woof! ${messages.join(' ')}`),
+        });
+      }
+    } catch (error) {
+      logger.info(
+        `onNewAddressPayment: failed to handle ${address} ${txid}: ${errorString(error)}`,
+      );
+    }
+  }
+
+  private async onAddressOverload(address: string) {
+    try {
+      logger.info(`onAddressOverload: ${address}`);
+      const watchedAddresses = await WatchedAddressesModel.find({ address });
+      if (watchedAddresses.length === 0) {
+        // safety check
+        bitcoindWatcher.unwatchAddress(address);
+        return;
+      }
+      const users = await UsersModel.find({
+        _id: {
+          $in: watchedAddresses.map(({ userId }) => userId),
+        },
+      });
+      const userById = new Map(users.map((user) => [`${user.id}`, user]));
+      logger.info(`TelegrafManager: Notifying users about address overload ${
+        users.map((user) => user.id).join(', ')
+      }`);
+      for await (const watchedAddress of watchedAddresses) {
+        const user = userById.get(`${watchedAddress.userId}`);
+        if (!user) {
+          continue;
+        }
+        const addressName = watchedAddress.nickname
+          ? `${watchedAddress.nickname} (${watchedAddress.address})`
+          : `${watchedAddress.address}`;
+        await this.sendMessage({
+          chatId: user.telegramChatId,
+          text: escapeMarkdown([
+            `⚠️ Woof! Address ${addressName} is being overloaded with transactions in the last`,
+            'hours. I cannot track each one of them, please watch them manually.',
+          ].join(' ')),
+        });
+      }
+    } catch (error) {
+      logger.error(
+        `TelegrafManager: Failed to handle address overload: ${errorString(error)}`,
+      );
     }
   }
 
@@ -839,6 +981,160 @@ class TelegrafManager {
     return TelegrafManager[BotCommandName.UnwatchTransactions](ctx, user);
   }
 
+  static async [BotCommandName.WatchAddresses](ctx: TextContext, user: UserDocument) {
+    const [commandName, ...args] = ctx.message.text.split(/\s+/);
+    if (args.length === 0) {
+      ctx.replyWithMarkdownV2(escapeMarkdown([
+        `Syntax: "${commandName} <address1> <address2> ..." or "${
+          commandName
+        } <address1-nickname>:<address1> <address2-nickname>:<address2>...".`,
+        'Address nickname must not contain spaces or more than 100 characters.',
+      ].join(' ')));
+      return;
+    }
+    const addresses: [string | undefined, string][] = [];
+    for (const arg of args) {
+      const parts = arg.split(':');
+      const watchedAddress = parts.pop();
+      if (!watchedAddress || !validate(watchedAddress)) {
+        ctx.replyWithMarkdownV2(escapeMarkdown('Invalid address.'));
+        return;
+      }
+      const nickname = parts.join(':');
+      if (nickname.length > 100) {
+        ctx.replyWithMarkdownV2(escapeMarkdown('Invalid address nickname.'));
+        return;
+      }
+      addresses.push([
+        (nickname.length > 0) ? nickname : undefined,
+        watchedAddress,
+      ]);
+    }
+    const nicknames = addresses.map(([nickname]) => nickname).filter((nickname) => nickname);
+    if ((nicknames.length > 0) && await WatchedAddressesModel.findOne({
+      userId: user._id,
+      nickname: {
+        $in: nicknames,
+      },
+    })) {
+      ctx.replyWithMarkdownV2(escapeMarkdown(
+        'You have already given the same nickname to another address that you watch.',
+      ));
+      return;
+    }
+    const existingWatches = await WatchedAddressesModel.find({
+      userId: user._id,
+      address: {
+        $in: addresses.map(([, address]) => address),
+      },
+    });
+    if (existingWatches.length > 0) {
+      if (existingWatches.length === 1) {
+        ctx.replyWithMarkdownV2(escapeMarkdown(
+          `You are already watching this address. See: /${BotCommandName.ListWatches}`,
+        ));
+      } else if (existingWatches.length === addresses.length) {
+        ctx.replyWithMarkdownV2(escapeMarkdown(
+          `You are already watching all of these address. See: /${BotCommandName.ListWatches}`,
+        ));
+      } else {
+        ctx.replyWithMarkdownV2(escapeMarkdown(
+          `You are already watching some of these address. See: /${BotCommandName.ListWatches}`,
+        ));
+      }
+      return;
+    }
+    await WatchedAddressesModel.insertMany(
+      addresses.map(([nickname, watchedAddress]) => ({
+        userId: user._id,
+        address: watchedAddress,
+        ...Boolean(nickname) && {
+          nickname,
+        },
+      })),
+    );
+    const overloadedAddresses: string[] = [];
+    for (const [, watchedAddress] of addresses) {
+      const isOverloaded = bitcoindWatcher.watchAddress(watchedAddress);
+      if (isOverloaded) {
+        overloadedAddresses.push(watchedAddress);
+      }
+    }
+    const isSingular = (addresses.length === 1);
+    ctx.replyWithMarkdownV2(escapeMarkdown([
+      `Started watching the ${
+        isSingular ? 'address' : 'addresses'
+      }. I will let you know when incoming transactions to ${
+        isSingular ? 'this address' : 'these addresses'
+      } appear in the mempool and in the blockchain, and when outgoing transactions from ${
+        isSingular ? 'this address' : 'these addresses'
+      } appear in the blockchain (outgoing transactions in the mempool will not be reported`,
+      'so please be patient or check them manually).',
+    ].join(' ')));
+  }
+
+  static async [BotCommandName.Wads](ctx: TextContext, user: UserDocument) {
+    return TelegrafManager[BotCommandName.WatchAddresses](ctx, user);
+  }
+
+  static async [BotCommandName.UnwatchAddresses](ctx: TextContext, user: UserDocument) {
+    const [commandName, ...args] = ctx.message.text.split(/\s+/);
+    if (args.length === 0) {
+      ctx.replyWithMarkdownV2(escapeMarkdown(
+        `Syntax: "${commandName} <address>" or "${
+          commandName
+        } <address-nickname>" or "${
+          commandName
+        } <address-prefix>*". Don't forget the '*' when using a prefix match.`,
+      ));
+      return;
+    }
+    const watchedAddresses = await WatchedAddressesModel.find({
+      userId: user._id,
+      $or: [
+        {
+          address: {
+            $in: args,
+          },
+        },
+        {
+          nickname: {
+            $in: args,
+          },
+        },
+        ...args.filter((arg) => /^\w*\*$/.test(arg)).map((arg) => ({
+          address: {
+            $regex: `^${arg.slice(0, -1)}.*$`,
+          },
+        })),
+      ],
+    });
+    if (!watchedAddresses.length) {
+      ctx.replyWithMarkdownV2(escapeMarkdown(
+        `No matching addresses were found. See /${BotCommandName.ListWatches}.`,
+      ));
+      return;
+    }
+    const deleteResult = await WatchedAddressesModel.deleteMany({
+      userId: user._id,
+      _id: {
+        $in: watchedAddresses.map(({ _id }) => _id),
+      },
+    });
+    TelegrafManager.unwatchUnusedAddresses(
+      watchedAddresses.map(({ address }) => address),
+    );
+    ctx.replyWithMarkdownV2(escapeMarkdown(
+      `${deleteResult.deletedCount} ${
+        (deleteResult.deletedCount === 1) ? 'address-watch was' : 'address-watches were'
+      } removed.`,
+    ));
+  }
+
+  static async [BotCommandName.Uwads](ctx: TextContext, user: UserDocument) {
+    return TelegrafManager[BotCommandName.UnwatchAddresses](ctx, user);
+  }
+
   static async [BotCommandName.MempoolLinks](ctx: TextContext) {
     const replyToMessage = ctx.message.reply_to_message;
     if (!replyToMessage) {
@@ -897,6 +1193,21 @@ class TelegrafManager {
         ),
       );
     }
+    const watchedAddresses = await WatchedAddressesModel.find({
+      userId: user._id,
+    });
+    if (watchedAddresses.length > 0) {
+      lines.push(
+        escapeMarkdown('You are watching the following addresses:'),
+        ...watchedAddresses.map(
+          (watchedAddress) => `• ${escapeMarkdown(
+            watchedAddress.nickname
+              ? `${watchedAddress.nickname}:${watchedAddress.address}`
+              : watchedAddress.address,
+          )}`,
+        ),
+      );
+    }
     if (lines.length === 0) {
       lines.push(escapeMarkdown('You are not watching anything.'));
     }
@@ -924,6 +1235,17 @@ class TelegrafManager {
         transactions.map(({ txid }) => txid),
       );
     }
+    const addresses = await WatchedAddressesModel.find({
+      userId: user._id,
+    });
+    if (addresses.length) {
+      await WatchedTransactionsModel.deleteMany({
+        userId: user._id,
+      });
+      TelegrafManager.unwatchUnusedAddresses(
+        addresses.map(({ address }) => address),
+      );
+    }
     ctx.replyWithMarkdownV2(escapeMarkdown('Woof! Goodbye.'));
   }
 
@@ -937,6 +1259,20 @@ class TelegrafManager {
     for (const txid of txids) {
       if (!existingTxids.has(txid)) {
         bitcoindWatcher.unwatchTransaction(txid);
+      }
+    }
+  }
+
+  static async unwatchUnusedAddresses(addresses: string[]) {
+    const existingAddressDocs = await WatchedAddressesModel.find({
+      address: {
+        $in: addresses,
+      },
+    });
+    const existingAddresses = new Set(existingAddressDocs.map(({ address }) => address));
+    for (const address of addresses) {
+      if (!existingAddresses.has(address)) {
+        bitcoindWatcher.unwatchAddress(address);
       }
     }
   }

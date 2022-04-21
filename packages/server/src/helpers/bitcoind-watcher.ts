@@ -1,6 +1,8 @@
 import EventEmitter from 'events';
 import zeromq from 'zeromq';
-import { Transaction } from 'bitcoinjs-lib';
+import {
+  Transaction, address as bitcoinjsAddress, networks as bitcoinjsNetworks,
+} from 'bitcoinjs-lib';
 import { Network } from 'bitcoin-address-validation';
 
 import logger from './logger';
@@ -18,6 +20,8 @@ export enum BitcoindWatcherEventName {
   NewTransactionAnalysis = 'newTransactionAnalysis',
   BlocksSkipped = 'blocksSkipped',
   NewBlockAnalyzed = 'newBlockAnalyzed',
+  NewAddressPayment = 'newAddressPayment',
+  AddressOverload = 'addressOverload',
 }
 
 export interface TransactionAnalysis {
@@ -40,6 +44,22 @@ export interface NewBlockAnalyzedEvent {
   bestBlockHeight: number;
 }
 
+export interface NewAddressPaymentEvent {
+  address: string;
+  txid: string;
+  status: TransactionStatus;
+  confirmations: number;
+  multiAddress: boolean;
+  incomeSats?: number;
+  outcomeSats?: number;
+}
+
+const networks = {
+  [Network.mainnet]: bitcoinjsNetworks.bitcoin,
+  [Network.testnet]: bitcoinjsNetworks.testnet,
+  [Network.regtest]: bitcoinjsNetworks.regtest,
+};
+
 const rawTransactionsBatchSize = 50;
 const maxAnalyzedBlocks = 5;
 const bitcoindWatcherErrorGraceMs = 10_000;
@@ -48,6 +68,20 @@ const recheckMempoolGraceMs = 10;
 
 const startAttempts = 6;
 const startGraceMs = 20_000;
+
+const satsPerBitcoin = 100_000_000;
+
+const maxOngoingIncomeTransactions = 1000;
+
+function confirmationsToTransactionStatus(confirmations: number): TransactionStatus {
+  if (confirmations === 0) {
+    return TransactionStatus.Mempool;
+  }
+  if (confirmations <= maxAnalyzedBlocks) {
+    return TransactionStatus.PartialConfirmation;
+  }
+  return TransactionStatus.FullConfirmation;
+}
 
 export function transactionAnalysisToString(analysis: TransactionAnalysis): string {
   return JSON.stringify({
@@ -85,6 +119,11 @@ class BitcoindWatcher extends EventEmitter {
 
   private checkMempool = true;
 
+  // maps address -> income-txid
+  private watchedAddresses: Map<string, Set<string>> = new Map();
+
+  private overloadedAddresses = new Set();
+
   private sequenceNotificationSocket: zeromq.Socket | undefined;
 
   private rawTransactionSocket: zeromq.Socket | undefined;
@@ -104,7 +143,8 @@ class BitcoindWatcher extends EventEmitter {
   private safeAsyncEmit(
     eventName: string,
     value?: (
-      NewTransactionAnalysisEvent | TransactionAnalysis | NewBlockAnalyzedEvent | string
+      NewTransactionAnalysisEvent | TransactionAnalysis | NewBlockAnalyzedEvent
+      | NewAddressPaymentEvent | string
     ),
   ) {
     // non-blocking
@@ -202,6 +242,10 @@ class BitcoindWatcher extends EventEmitter {
               this.transactionsToReanalyze.push(txid);
             }
           }
+          if (newAnalysis.rawTransaction && !newAnalysis.rawTransaction.confirmations) {
+            // report incomes for this mempool transactions
+            this.reportIncomes(newAnalysis.rawTransaction, 0);
+          }
         } finally {
           const { transactionPayloadsQueue } = this;
           this.transactionPayloadsQueue = undefined;
@@ -266,6 +310,10 @@ class BitcoindWatcher extends EventEmitter {
               .filter((txIn) => txIn.txid)
               .map((txIn) => txInStandardKey(txIn as TxInStandard)),
           );
+          if (!recheckTransaction.confirmations) {
+            // report incomes for this mempool transactions
+            this.reportIncomes(recheckTransaction, 0);
+          }
         }
       }
     } catch (error) {
@@ -406,6 +454,17 @@ class BitcoindWatcher extends EventEmitter {
     }
   }
 
+  private fromOutputScript(script: Buffer): string | undefined {
+    if (!this.chain) {
+      return undefined;
+    }
+    try {
+      return bitcoinjsAddress.fromOutputScript(script, networks[this.chain]);
+    } catch (error) { // ignore error
+      return undefined;
+    }
+  }
+
   private handleNewTransactionPayload(transactionPayload: Buffer) {
     if (this.transactionPayloadsQueue) {
       this.transactionPayloadsQueue.push(transactionPayload);
@@ -418,7 +477,13 @@ class BitcoindWatcher extends EventEmitter {
     }
     const txid = transaction.getId();
     const analysis = this.transactionAnalyses.get(txid);
-    if (analysis && !analysis.transactionInputKeys) {
+    if (
+      (analysis && !analysis.transactionInputKeys)
+      || transaction.outs.some((transactionOutput) => {
+        const address = this.fromOutputScript(transactionOutput.script);
+        return address && this.watchedAddresses.has(address);
+      })
+    ) {
       this.transactionsToReanalyze.push(txid);
       this.safeAsyncEmit(BitcoindWatcherEventName.Trigger);
     }
@@ -462,6 +527,70 @@ class BitcoindWatcher extends EventEmitter {
     }
   }
 
+  private reportIncomes(transaction: BlockTransaction, confirmations: number) {
+    const matchingAddresses: Set<string> = new Set();
+    for (const txOut of transaction.vout) {
+      for (const txOutAddress of txOut.scriptPubKey.addresses ?? []) {
+        if (this.watchedAddresses.has(txOutAddress)) {
+          matchingAddresses.add(txOutAddress);
+        }
+      }
+    }
+    for (const matchingAddress of matchingAddresses) {
+      this.checkWatchedAddressIncome(matchingAddress, transaction, confirmations);
+    }
+  }
+
+  private checkWatchedAddressIncome(
+    watchedAddress: string,
+    rawTransaction: BlockTransaction,
+    confirmations: number,
+  ) {
+    logger.info(
+      `checkWatchedAddressIncome: address: ${watchedAddress} txid: ${
+        rawTransaction.txid
+      } confirmations: ${confirmations}.`,
+    );
+    const alreadyDiscoveredTransactions = this.watchedAddresses.get(watchedAddress);
+    if (!alreadyDiscoveredTransactions) {
+      // address not watched
+      return;
+    }
+    if ((confirmations === 0) && alreadyDiscoveredTransactions.has(rawTransaction.txid)) {
+      // First appearance on mempool was already reported
+      return;
+    }
+    const newTransactionStatus = confirmationsToTransactionStatus(confirmations);
+    const txOuts = rawTransaction.vout.filter(
+      (txOut) => txOut.scriptPubKey.addresses?.includes(watchedAddress),
+    );
+    const multiAddress = txOuts.some(
+      (txOut) => ((txOut.scriptPubKey.addresses ?? []).length > 1),
+    );
+    const incomeSats = txOuts.reduce(
+      (partialSum, txOut) => partialSum + Math.round(txOut.value * satsPerBitcoin),
+      0,
+    );
+    if (!alreadyDiscoveredTransactions.has(rawTransaction.txid)) {
+      if (alreadyDiscoveredTransactions.size >= maxOngoingIncomeTransactions) {
+        alreadyDiscoveredTransactions.clear();
+        this.safeAsyncEmit(BitcoindWatcherEventName.AddressOverload, watchedAddress);
+      }
+      alreadyDiscoveredTransactions.add(rawTransaction.txid);
+    }
+    this.safeAsyncEmit(
+      BitcoindWatcherEventName.NewAddressPayment,
+      {
+        address: watchedAddress,
+        txid: rawTransaction.txid,
+        status: newTransactionStatus,
+        confirmations,
+        multiAddress,
+        incomeSats,
+      },
+    );
+  }
+
   private async analyzeNewBlocks(bestBlockHash: string): Promise<boolean> {
     logger.info(`analyzeNewBlocks: ${bestBlockHash}`);
     const newBlocks: BlockVerbosity2[] = [];
@@ -495,6 +624,10 @@ class BitcoindWatcher extends EventEmitter {
       this.transactionsToReanalyze.push(
         ...this.transactionAnalyses.keys(),
       );
+      for (const [, alreadyDiscoveredTransactions] of this.watchedAddresses) {
+        // might cause same payment status to be reported multiple times.
+        alreadyDiscoveredTransactions.clear();
+      }
       this.shouldRerun = true;
     }
     const transactions = newBlocks.flatMap(
@@ -503,6 +636,9 @@ class BitcoindWatcher extends EventEmitter {
         block,
       ])),
     );
+    if (this.watchedAddresses.size > 0) {
+      await this.analyzeBlockSpendingAddresses(transactions, false);
+    }
     for (const [transaction, block] of transactions) {
       const oldAnalysis = this.transactionAnalyses.get(transaction.txid);
       if (!oldAnalysis) {
@@ -531,13 +667,14 @@ class BitcoindWatcher extends EventEmitter {
         },
       );
     }
-    for (const [transaction] of transactions) {
+    for (const [transaction, block] of transactions) {
       this.checkTransactionConflicts(
         transaction.txid,
         transaction.vin
           .filter((txIn) => txIn.txid)
           .map((txIn) => txInStandardKey(txIn as TxInStandard)),
       );
+      this.reportIncomes(transaction, block.confirmations);
     }
     const lastAttachedBlockIndex = this.analyzedBlockHashes.indexOf(
       newBlocks[0].previousblockhash,
@@ -557,6 +694,17 @@ class BitcoindWatcher extends EventEmitter {
     });
     const confirmedBlockHashes = attachedBlockHashes.slice(0, -maxAnalyzedBlocks).reverse();
     logger.info(`analyzeNewBlocks: confirmedBlockHashes: ${confirmedBlockHashes.join(', ')}`);
+
+    if (this.watchedAddresses.size > 0) {
+      const confirmedTransactions = await getBlockTransactions(confirmedBlockHashes);
+      await this.analyzeBlockSpendingAddresses(confirmedTransactions, true);
+      for (const [transaction, block] of confirmedTransactions) {
+        this.reportIncomes(transaction, block.confirmations);
+        for (const [, alreadyDiscoveredTransactions] of this.watchedAddresses) {
+          alreadyDiscoveredTransactions.delete(transaction.txid);
+        }
+      }
+    }
 
     for (const [txid, oldAnalysis] of [...this.transactionAnalyses]) {
       if (oldAnalysis.blockHashes.size === 0) {
@@ -588,9 +736,80 @@ class BitcoindWatcher extends EventEmitter {
     return true; // analysis complete
   }
 
+  private async analyzeBlockSpendingAddresses(
+    transactions: [RawTransaction, BlockVerbosity2][],
+    fullConfirmation: boolean,
+  ) {
+    const inputTransactionIds = [...new Set(transactions.flatMap(
+      ([transaction]) => transaction.vin.map((txIn) => txIn.txid).filter(Boolean),
+    ) as string[])];
+    logger.info(`analyzeBlockSpendingAddresses: Getting ${
+      inputTransactionIds.length
+    } input transactions`);
+    const inputTransactions: Map<string, RawTransaction> = new Map();
+    while (inputTransactionIds.length > 0) {
+      // eslint-disable-next-line no-await-in-loop
+      const someInputTransactions = await getRawTransactionsBatch(
+        inputTransactionIds.splice(0, rawTransactionsBatchSize),
+      );
+      for (const someInputTransaction of someInputTransactions) {
+        if (someInputTransaction.vout.some(
+          (txOut) => txOut.scriptPubKey.addresses?.some(
+            (ad) => this.watchedAddresses.has(ad),
+          ),
+        )) {
+          inputTransactions.set(someInputTransaction.txid, someInputTransaction);
+        }
+      }
+    }
+    for (const [transaction, block] of transactions) {
+      const spendingByAddresses: Map<string, number> = new Map();
+      for (const txIn of transaction.vin) {
+        if (!txIn.txid) {
+          continue;
+        }
+        const inputTransaction = inputTransactions.get(txIn.txid);
+        if (!inputTransaction) {
+          continue;
+        }
+        const txOut = inputTransaction.vout[txIn.vout];
+        if (!txOut || !txOut.scriptPubKey.addresses) {
+          continue;
+        }
+        for (const spendingAddress of txOut.scriptPubKey.addresses) {
+          if (this.watchedAddresses.has(spendingAddress)) {
+            spendingByAddresses.set(
+              spendingAddress,
+              (spendingByAddresses.get(spendingAddress) ?? 0)
+              + Math.round(txOut.value * satsPerBitcoin),
+            );
+          }
+        }
+      }
+      for (const [address, outcomeSats] of spendingByAddresses) {
+        this.safeAsyncEmit(
+          BitcoindWatcherEventName.NewAddressPayment,
+          {
+            address,
+            txid: transaction.txid,
+            status: (
+              fullConfirmation
+                ? TransactionStatus.FullConfirmation
+                : TransactionStatus.PartialConfirmation
+            ),
+            confirmations: block.confirmations,
+            multiAddress: false, // relevant only for incoming transactions
+            outcomeSats,
+          },
+        );
+      }
+    }
+  }
+
   async start(
     analyzedBlockHashes: string[],
     watchedTransactions: [string, TransactionAnalysis][],
+    watchedAddresses: string[],
   ) {
     let blockchainInfo: ChainInfo | undefined;
     for (let attempt = 0; attempt < startAttempts; attempt += 1) {
@@ -635,6 +854,9 @@ class BitcoindWatcher extends EventEmitter {
     this.analyzedBlockHashes = analyzedBlockHashes;
     for (const [txid, analysis] of watchedTransactions) {
       this.setTransactionAnalysis(txid, analysis);
+    }
+    for (const watchedAddress of watchedAddresses) {
+      this.watchedAddresses.set(watchedAddress, new Set());
     }
 
     if (notificationAddresses.sequence) {
@@ -702,6 +924,19 @@ class BitcoindWatcher extends EventEmitter {
   unwatchTransaction(txid: string) {
     this.transactionsToUnwatch.push(txid);
     this.safeAsyncEmit(BitcoindWatcherEventName.Trigger);
+  }
+
+  watchAddress(watchedAddress: string) {
+    if (this.watchedAddresses.has(watchedAddress)) {
+      return this.overloadedAddresses.has(watchedAddress);
+    }
+    this.watchedAddresses.set(watchedAddress, new Set());
+    return false;
+  }
+
+  unwatchAddress(watchedAddress: string) {
+    this.watchedAddresses.delete(watchedAddress);
+    this.overloadedAddresses.delete(watchedAddress);
   }
 
   getChain(): Network {

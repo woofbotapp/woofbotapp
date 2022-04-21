@@ -187,13 +187,13 @@ class BitcoindWatcher extends EventEmitter {
         this.shouldRerun = true;
         const txid = this.transactionsToReanalyze.shift() as string;
         const oldAnalysis = this.transactionAnalyses.get(txid);
-        if (oldAnalysis) {
-          this.transactionPayloadsQueue = [];
-          try {
-            const newAnalysis = await this.analyzeTransaction(
-              txid,
-              !oldAnalysis.transactionInputKeys,
-            );
+        this.transactionPayloadsQueue = [];
+        try {
+          const newAnalysis = await this.analyzeTransaction(
+            txid,
+            Boolean(oldAnalysis && !oldAnalysis.transactionInputKeys),
+          );
+          if (oldAnalysis) {
             if (oldAnalysis === this.transactionAnalyses.get(txid)) {
               // safety check that analysis did not change
               this.handleNewTransactionAnalysis(txid, oldAnalysis, newAnalysis);
@@ -201,12 +201,12 @@ class BitcoindWatcher extends EventEmitter {
               // race-condition ?
               this.transactionsToReanalyze.push(txid);
             }
-          } finally {
-            const { transactionPayloadsQueue } = this;
-            this.transactionPayloadsQueue = undefined;
-            for (const transactionPayload of transactionPayloadsQueue) {
-              this.handleNewTransactionPayload(transactionPayload);
-            }
+          }
+        } finally {
+          const { transactionPayloadsQueue } = this;
+          this.transactionPayloadsQueue = undefined;
+          for (const transactionPayload of transactionPayloadsQueue) {
+            this.handleNewTransactionPayload(transactionPayload);
           }
         }
       } else if (this.checkNewBlock) {

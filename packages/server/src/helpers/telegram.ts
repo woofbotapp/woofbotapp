@@ -157,6 +157,9 @@ class TelegrafManager {
                 conflictingTransactions: [...newAnalysis.conflictingTransactions],
               },
               blockHashes: [...newAnalysis.blockHashes],
+              ...(newAnalysis.rawTransaction !== undefined) && {
+                rawTransaction: JSON.stringify(newAnalysis.rawTransaction),
+              },
             },
           },
         );
@@ -693,6 +696,9 @@ class TelegrafManager {
             nickname,
           },
           blockHashes: [...analysis.blockHashes],
+          ...(analysis.rawTransaction !== undefined) && {
+            rawTransaction: JSON.stringify(analysis.rawTransaction),
+          },
         });
       }
       const replyMessage: string[] = [];

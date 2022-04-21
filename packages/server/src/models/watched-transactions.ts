@@ -20,6 +20,7 @@ interface WatchedTransactionFields {
   confirmations: number;
   conflictingTransactions?: string[];
   transactionInputKeys?: string[];
+  rawTransaction?: string;
 }
 
 const schema = new Schema<WatchedTransactionFields & TimeFields>({
@@ -31,6 +32,7 @@ const schema = new Schema<WatchedTransactionFields & TimeFields>({
   confirmations: { type: Number, required: true },
   conflictingTransactions: { type: [String], required: false },
   transactionInputKeys: { type: [String], required: false },
+  rawTransaction: { type: String, required: false },
 }, { timestamps: true });
 
 export const WatchedTransactionsModel = model('watched_transactions', schema);

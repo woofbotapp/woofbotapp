@@ -8,7 +8,7 @@ import { errorString } from './error';
 import {
   ChainInfo, BlockVerbosity2, getBestBlockHash, getBlock, getBlockchainInfo, getBlockTransactions,
   getNotificationAddresses, getRawMempool, getRawTransaction, getRawTransactionsBatch,
-  isTransactionInMempool, TxInStandard, BlockTransaction,
+  isTransactionInMempool, TxInStandard, BlockTransaction, RawTransaction,
 } from './bitcoin-rpc';
 import { TransactionStatus } from '../models/watched-transactions';
 
@@ -26,6 +26,7 @@ export interface TransactionAnalysis {
   confirmations: number;
   conflictingTransactions?: Set<string>;
   transactionInputKeys?: Set<string>;
+  rawTransaction?: RawTransaction;
 }
 
 export interface NewTransactionAnalysisEvent {
@@ -314,6 +315,7 @@ class BitcoindWatcher extends EventEmitter {
           rawTransaction.blockhash ? [rawTransaction.blockhash] : [],
         ),
         confirmations,
+        rawTransaction,
       };
     }
     const detailedAnalysis: TransactionAnalysis = {
@@ -325,6 +327,7 @@ class BitcoindWatcher extends EventEmitter {
         rawTransaction.blockhash ? [rawTransaction.blockhash] : [],
       ),
       confirmations,
+      rawTransaction,
     };
     logger.info(`analyzeTransaction: ${txid} is not confirmed: ${detailedAnalysis.status}`);
     if (!findConflicts) {

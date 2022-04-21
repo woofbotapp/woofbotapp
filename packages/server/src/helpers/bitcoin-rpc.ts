@@ -78,7 +78,7 @@ export interface BlockTransaction {
   vout: TxOut[];
 }
 
-interface RawTransaction extends BlockTransaction {
+export interface RawTransaction extends BlockTransaction {
   blockhash?: string;
   confirmations?: number;
   blocktime?: number;

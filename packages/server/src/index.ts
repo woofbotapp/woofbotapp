@@ -141,6 +141,9 @@ app.use((err, _req, res, _next) => {
       transactionInputKeys: transaction.transactionInputKeys && new Set(
         transaction.transactionInputKeys,
       ),
+      ...(typeof transaction.rawTransaction === 'string') && {
+        rawTransaction: JSON.parse(transaction.rawTransaction),
+      },
     },
   ]));
   await bitcoindWatcher.start(

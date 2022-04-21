@@ -1,0 +1,47 @@
+build/**/*
+node_modules
+build
+*.tsbuildinfo
+dev-mongodb-data
+dev-bitcoind-data
+
+.vscode
+.DS_Store
+
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+build/*
+
+**.*.map
+**.d.ts
+
+# node-waf configuration
+.lock-wscript
+
+# Compiled binary addons (http://nodejs.org/api/addons.html)
+build/Release
+
+# Optional npm cache directory
+.npm
+
+# Optional REPL history
+.node_repl_history
+
+# Output of 'npm pack'
+*.tgz
+
+# Yarn Integrity file
+.yarn-integrity
+
+# dotenv environment variables file
+.env
+## Compiled JavaScript files
+**/*.js.map
+
+# Typescript v1 declaration files
+typings/
+dist

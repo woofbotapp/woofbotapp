@@ -1,0 +1,57 @@
+{
+  "name": "@woofbot/client",
+  "version": "0.1.0",
+  "main": "index.js",
+  "license": "SEE LICENSE IN ../../license",
+  "private": true,
+  "proxy": "http://localhost:8080",
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  },
+  "devDependencies": {
+    "@types/node": "^16.7.0",
+    "@types/react": "^17.0.22",
+    "@types/react-dom": "^17.0.9",
+    "@typescript-eslint/eslint-plugin": "^5.15.0",
+    "@typescript-eslint/parser": "^5.15.0",
+    "eslint": "^8.2.0",
+    "eslint-config-airbnb": "18.2.1",
+    "eslint-plugin-import": "^2.22.1",
+    "eslint-plugin-jsx-a11y": "^6.4.1",
+    "eslint-plugin-react": "^7.21.5",
+    "eslint-plugin-react-hooks": "^1.7.0",
+    "typescript": "^4.6.2"
+  },
+  "dependencies": {
+    "@emotion/react": "^11.8.2",
+    "@emotion/styled": "^11.8.1",
+    "@mui/icons-material": "^5.5.1",
+    "@mui/material": "^5.5.2",
+    "@woofbot/common": "^0.1.0",
+    "react": "^17.0.2",
+    "react-dom": "^17.0.2",
+    "react-query": "^3.34.16",
+    "react-router-dom": "^6.2.2",
+    "react-scripts": "4.0.3",
+    "react-toastify": "^8.2.0",
+    "web-vitals": "^2.1.0"
+  },
+  "scripts": {
+    "dev": "react-scripts start",
+    "build": "yarn lint && INLINE_RUNTIME_CHUNK=false react-scripts build",
+    "clean": "rimraf build",
+    "test": "yarn lint && react-scripts test",
+    "eject": "react-scripts eject",
+    "lint": "eslint . --ext .ts,.tsx",
+    "lint:fix": "eslint . --fix --ext .ts,.tsx"
+  }
+}

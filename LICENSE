@@ -1,0 +1,46 @@
+Please see LICENSE-DEPENDENCIES to read about the licenses of the other projects
+that this software dependes on.
+
+Please notice that in addition to the MIT License conditions, you are not allowed to change the
+content of the sponsorship-message that is sent to the users, you are not allowed to change the 
+logic that affect the use-cases and frequency in which the sponsorship-message is sent (except
+for unintentional bugs), and you are not allowed to add more sponsorship-messages or
+advertisements in content that is sent to users.
+
+MIT License (with modifications)
+
+Copyright (c) 2022 WoofBot
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+** Modification to the original MIT License conditions **
+
+You are not allowed to change the content of the sponsorship-message that is sent to the users,
+which is currently: "Your sponsorship can be here! woofbot@protonmail.com" and may change in 
+future versions of this software.
+
+You are not allowed to change the logic that affect the use-cases and frequency in which the 
+sponsorship-message is sent to the users (except for unintentional bugs).
+
+You are not allowed to add more sponsorship messages or advertisements in content that is sent to
+users, even in logic that you added yourself.
+
+These conditions must be included in any copy, modification and sublicense of this software.
+
+** End of modification to the original MIT License conditions **
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.

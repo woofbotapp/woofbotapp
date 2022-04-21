@@ -1,0 +1,22 @@
+{
+  "name": "@woofbot/common",
+  "version": "0.1.0",
+  "main": "build/index.js",
+  "types": "build/index.d.ts",
+  "license": "SEE LICENSE IN ../../license",
+  "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^5.15.0",
+    "@typescript-eslint/parser": "^5.15.0",
+    "eslint": "^8.2.0",
+    "eslint-config-airbnb-base": "15.0.0",
+    "eslint-plugin-import": "^2.25.2",
+    "typescript": "^4.6.2"
+  },
+  "scripts": {
+    "tsc": "tsc --build",
+    "clean": "rimraf build tsconfig.tsbuildinfo",
+    "build": "yarn clean && yarn tsc",
+    "lint": "eslint . --ext .ts",
+    "lint:fix": "eslint . --fix --ext .ts"
+  }
+}

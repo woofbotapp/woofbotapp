@@ -1,0 +1,165 @@
+import { AppName } from '@woofbot/common';
+import express from 'express';
+import expressWinston from 'express-winston';
+import helmet from 'helmet';
+import { connect as connectMongoose } from 'mongoose';
+import nocache from 'nocache';
+import { join } from 'path';
+import winston from 'winston';
+
+import apiRouter from './routes/api';
+import { defaultSettings, SettingsModel } from './models/settings';
+import logger, { defaultLogFormat } from './helpers/logger';
+import { zeroObjectId } from './helpers/mongo';
+import { DecodedAuthToken } from './models/refresh-tokens';
+import telegramManager, { escapeMarkdown } from './helpers/telegram';
+import { UsersModel } from './models/users';
+import {
+  bitcoindWatcher, BitcoindWatcherEventName, NewBlockAnalyzedEvent, TransactionAnalysis,
+} from './helpers/bitcoind-watcher';
+import { errorString } from './helpers/error';
+import { WatchedTransactionsModel } from './models/watched-transactions';
+
+declare global {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  namespace Express {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    interface Request {
+      authToken?: DecodedAuthToken;
+    }
+  }
+}
+
+const clientPath = '../../client/build';
+const port = 8080; // default port to listen
+const mongodbUri = process.env.MONGODB_URI || 'mongodb://localhost:27017/woofbot';
+const rebootMessage = escapeMarkdown(`\
+⚠️ Woof! The server has rebooted, and some events might have been missed. \
+If you configured any watches for transactions or addresses, it is recommended to check them \
+manually.`);
+
+const app = express();
+app.use(helmet({
+  hsts: false,
+  expectCt: false,
+  contentSecurityPolicy: {
+    directives: {
+      upgradeInsecureRequests: null,
+    },
+  },
+}));
+app.use(expressWinston.logger({
+  transports: [
+    new winston.transports.Console(),
+  ],
+  format: defaultLogFormat,
+  expressFormat: true,
+}));
+
+// Serve static resources from the "public" folder (ex: when there are images to display)
+app.use(express.static(join(__dirname, clientPath)));
+
+app.use('/api', nocache(), apiRouter);
+
+// Serve the HTML page
+app.get('*', (req: any, res: any) => {
+  res.sendFile(join(__dirname, clientPath, 'index.html'));
+});
+
+app.use((req, res) => {
+  res.status(404).send('Not Found');
+});
+
+app.use(expressWinston.errorLogger({
+  transports: [
+    new winston.transports.Console(),
+  ],
+  format: defaultLogFormat,
+}));
+
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+app.use((err, _req, res, _next) => {
+  if (!res.headersSent) {
+    res.status(500);
+    res.send('Internal error');
+  }
+});
+
+// start the server
+(async () => {
+  logger.info(`NODE_ENV: ${process.env.NODE_ENV}`);
+  for (const envKey of [
+    'MONGODB_URI', 'APP_SEED', 'APP_PASSWORD', 'BITCOIN_IP', 'BITCOIN_RPC_USER',
+    'BITCOIN_RPC_PASS', 'BITCOIN_RPC_PORT',
+  ]) {
+    logger.info(`Env var ${envKey} was ${process.env[envKey] ? 'found' : 'not found'}`);
+  }
+  await connectMongoose(mongodbUri);
+  await SettingsModel.updateOne({
+    _id: zeroObjectId,
+  }, {
+    $setOnInsert: defaultSettings,
+  }, {
+    upsert: true,
+  });
+  const settings = await SettingsModel.findById(zeroObjectId);
+  if (!settings) {
+    throw new Error('Could not load settings');
+  }
+  telegramManager.startMessageQueueInterval();
+  if (settings.telegramToken) {
+    await telegramManager.startBot(settings.telegramToken);
+  }
+  bitcoindWatcher.on(
+    BitcoindWatcherEventName.NewBlockAnalyzed,
+    async (event: NewBlockAnalyzedEvent) => {
+      try {
+        await SettingsModel.updateOne(
+          { _id: zeroObjectId },
+          {
+            $set: {
+              analyzedBlockHashes: event.blockHashes,
+              bestBlockHeight: event.bestBlockHeight,
+            },
+          },
+        );
+      } catch (error) {
+        logger.error(`Failed to save analyzed block hashes: ${errorString(error)}`);
+      }
+    },
+  );
+  const transactions = await WatchedTransactionsModel.find({});
+  const analysisByTxid = new Map<string, TransactionAnalysis>(transactions.map((transaction) => [
+    transaction.txid,
+    {
+      status: transaction.status,
+      blockHashes: new Set(transaction.blockHashes),
+      confirmations: transaction.confirmations,
+      conflictingTransactions: transaction.conflictingTransactions && new Set(
+        transaction.conflictingTransactions,
+      ),
+      transactionInputKeys: transaction.transactionInputKeys && new Set(
+        transaction.transactionInputKeys,
+      ),
+    },
+  ]));
+  await bitcoindWatcher.start(
+    settings.analyzedBlockHashes ?? [],
+    [...analysisByTxid.entries()],
+  );
+  const watchRebootUsers = await UsersModel.find({ watchReboot: true });
+  for await (const user of watchRebootUsers) {
+    await telegramManager.sendMessage({
+      chatId: user.telegramChatId,
+      text: rebootMessage,
+    });
+  }
+  app.listen(port, () => {
+    logger.info(`app ${AppName} started at http://localhost:${port}`);
+  });
+})().catch((error) => {
+  // Crash with error
+  setImmediate(() => {
+    throw error;
+  });
+});

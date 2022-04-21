@@ -1,0 +1,420 @@
+import fetch from 'node-fetch';
+
+export interface ChainInfo {
+  chain: string
+  blocks: number
+  headers: number
+  bestblockchash: number
+  difficulty: number
+  mediantime: number
+  verificationprogress: number
+  initialblockdownload: boolean
+  chainwork: string
+  size_on_disk: number
+  pruned: boolean
+  pruneheight: number
+  automatic_pruning: boolean
+  prune_target_size: number
+  softforks: {
+    id: string
+    version: number
+    reject: {
+      status: boolean
+    }
+  }[]
+  bip9_softforks: {
+    [key: string]: {
+      status: 'defined' | 'started' | 'locked_in' | 'active' | 'failed'
+    }
+  }[]
+  warnings?: string
+}
+
+interface TxInScriptSig {
+  asm: string;
+  hex: string;
+}
+
+interface TxInCoinbase {
+  coinbase: string;
+  sequence: number;
+  txid: undefined;
+  vout: undefined;
+}
+
+export interface TxInStandard {
+  txid: string;
+  vout: number;
+  scriptSig: TxInScriptSig;
+  txinwitness?: string[];
+  sequence: number;
+}
+
+type TxIn = TxInCoinbase | TxInStandard;
+
+interface TxOutScriptPubKey {
+  asm: string;
+  hex: string;
+  reqSigs: number;
+  type: string;
+  addresses?: string[];
+}
+
+interface TxOut {
+  value: number
+  n: number
+  scriptPubKey: TxOutScriptPubKey;
+}
+
+// When the transaction is specified in a specific block details
+export interface BlockTransaction {
+  txid: string;
+  hash: string;
+  version: number;
+  size: number;
+  vsize: number;
+  locktime: number;
+  vin: TxIn[];
+  vout: TxOut[];
+}
+
+interface RawTransaction extends BlockTransaction {
+  blockhash?: string;
+  confirmations?: number;
+  blocktime?: number;
+  time?: number;
+}
+
+export interface BlockVerbosity2 {
+  hash: string;
+  confirmations: number;
+  strippedsize: number;
+  size: number;
+  weight: number;
+  height: number;
+  version: number;
+  verxionHex: string;
+  merkleroot: string;
+  tx: BlockTransaction[];
+  hex: string;
+  time: number;
+  mediantime: number;
+  nonce: number;
+  bits: string;
+  difficulty: number;
+  chainwork: string;
+  previousblockhash: string;
+  nextblockchash?: string;
+}
+
+interface BitcoinRpcErrorJson {
+  code: number;
+  message: string;
+}
+
+interface BitcoinRpcResponseId {
+  id: string;
+}
+
+interface BitcoinRpcSuccessResponse<T> extends BitcoinRpcResponseId {
+  result: T;
+  error: null;
+}
+
+interface BitcoinRpcFailResponse extends BitcoinRpcResponseId {
+  result: null;
+  error: BitcoinRpcErrorJson;
+}
+
+interface ZmqNotification {
+  type: string;
+  address: string;
+  hwm?: number;
+}
+
+type BitcoinRpcResponse<T> = BitcoinRpcSuccessResponse<T> | BitcoinRpcFailResponse;
+
+const bitcoinRpcUrl = `http://${
+  process.env.BITCOIN_IP || 'localhost'
+}:${process.env.BITCOIN_RPC_PORT || 18444}`;
+
+const bitcoinRpcHttpOptions = {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+    Accept: 'application/json',
+    Authorization: `Basic ${Buffer.from(`${
+      process.env.BITCOIN_RPC_USER || 'bitcoinrpcuser'
+    }:${
+      process.env.BITCOIN_RPC_PASS || 'bitcoinrpcpassword'
+    }`).toString('base64')}`,
+  },
+};
+
+const bitcoinRpcErrorNotFound = -5;
+
+class BitcoinRpcError extends Error {
+  code: number;
+
+  constructor(errorJson: BitcoinRpcErrorJson) {
+    super(errorJson.message || 'Unknown error');
+    this.code = errorJson.code;
+  }
+
+  isNotFound() {
+    return (this.code === bitcoinRpcErrorNotFound);
+  }
+}
+
+interface RpcProperties {
+  method: string;
+  params?: unknown;
+}
+
+async function rpc<T>(properties: RpcProperties): Promise<T> {
+  const rpcId = Math.random().toString(36).substring(2);
+  const response = await fetch(
+    bitcoinRpcUrl,
+    {
+      ...bitcoinRpcHttpOptions,
+      body: JSON.stringify({
+        jsonrpc: '2.0',
+        id: rpcId,
+        method: properties.method,
+        params: properties.params,
+      }),
+    },
+  );
+  const responseJson = (await response.json()) as BitcoinRpcResponse<T>;
+  if (responseJson.id !== rpcId) {
+    throw new Error('Unexpected bitcoin rpc response id');
+  }
+  if (responseJson.error) {
+    throw new BitcoinRpcError(responseJson.error);
+  }
+  return responseJson.result;
+}
+
+async function rpcBatch<T>(propertiesArray: RpcProperties[]): Promise<(BitcoinRpcError | T)[]> {
+  const rpcId = Math.random().toString(36).substring(2);
+  const response = await fetch(
+    bitcoinRpcUrl,
+    {
+      ...bitcoinRpcHttpOptions,
+      body: JSON.stringify(
+        propertiesArray.map(({ method, params }, index) => ({
+          jsonrpc: '2.0',
+          id: `${rpcId}:${index}`,
+          method,
+          params,
+        })),
+      ),
+    },
+  );
+  const responseJson = (await response.json()) as BitcoinRpcResponse<T>[];
+  if (responseJson.some(({ id }, index) => `${rpcId}:${index}` !== id)) {
+    throw new Error('Unexpected bitcoin rpc response id');
+  }
+  return responseJson.map((rpcResponse) => (
+    rpcResponse.error ? new BitcoinRpcError(rpcResponse.error) : rpcResponse.result
+  ));
+}
+
+export async function getRawTransaction(txid: string): Promise<RawTransaction | undefined> {
+  try {
+    const response: RawTransaction = await rpc({
+      method: 'getrawtransaction',
+      params: {
+        txid,
+        verbose: true,
+      },
+    });
+    return response;
+  } catch (error) {
+    if ((error instanceof BitcoinRpcError) && error.isNotFound()) {
+      return undefined;
+    }
+    throw error;
+  }
+}
+
+export async function getRawTransactionsBatch(txids: string[]): Promise<RawTransaction[]> {
+  if (txids.length === 0) {
+    return [];
+  }
+  const rawTransactions: (RawTransaction | BitcoinRpcError)[] = await rpcBatch(
+    txids.map((txid) => ({
+      method: 'getrawtransaction',
+      params: {
+        txid,
+        verbose: true,
+      },
+    })),
+  );
+  const filteredTransactions = rawTransactions.filter((rawTransaction) => {
+    if (rawTransaction instanceof BitcoinRpcError) {
+      if (!rawTransaction.isNotFound()) {
+        throw rawTransaction;
+      }
+      return false;
+    }
+    return true;
+  }) as RawTransaction[];
+  return filteredTransactions;
+}
+
+export async function isTransactionInMempool(txid: string) {
+  try {
+    await rpc({
+      method: 'getmempoolentry',
+      params: { txid },
+    });
+    return true;
+  } catch (error) {
+    if ((error instanceof BitcoinRpcError) && error.isNotFound()) {
+      return false;
+    }
+    throw error;
+  }
+}
+
+export async function getRawMempool(): Promise<string[] | undefined> {
+  try {
+    const response: string[] = await rpc({
+      method: 'getrawmempool',
+      params: { verbose: false },
+    });
+    return response;
+  } catch (error) {
+    if ((error instanceof BitcoinRpcError) && error.isNotFound()) {
+      return undefined;
+    }
+    throw error;
+  }
+}
+
+export async function getBlockchainInfo(): Promise<ChainInfo | undefined> {
+  try {
+    const response: ChainInfo = await rpc({
+      method: 'getblockchaininfo',
+    });
+    return response;
+  } catch (error) {
+    if ((error instanceof BitcoinRpcError) && error.isNotFound()) {
+      return undefined;
+    }
+    throw error;
+  }
+}
+
+export async function getBestBlockHash(): Promise<string | undefined> {
+  try {
+    const response: string = await rpc({
+      method: 'getbestblockhash',
+    });
+    return response;
+  } catch (error) {
+    if ((error instanceof BitcoinRpcError) && error.isNotFound()) {
+      return undefined;
+    }
+    throw error;
+  }
+}
+
+export async function getZmqNotifications(): Promise<ZmqNotification[] | undefined> {
+  try {
+    const response: ZmqNotification[] = await rpc({
+      method: 'getzmqnotifications',
+    });
+    return response;
+  } catch (error) {
+    if ((error instanceof BitcoinRpcError) && error.isNotFound()) {
+      return undefined;
+    }
+    throw error;
+  }
+}
+
+export async function getBlock(blockhash: string): Promise<BlockVerbosity2 | undefined> {
+  try {
+    const response: BlockVerbosity2 = await rpc({
+      method: 'getblock',
+      params: {
+        blockhash,
+        verbosity: 2,
+      },
+    });
+    return response;
+  } catch (error) {
+    if ((error instanceof BitcoinRpcError) && error.isNotFound()) {
+      return undefined;
+    }
+    throw error;
+  }
+}
+
+export async function getBlockTransactions(
+  blockHashes: string[],
+): Promise<[BlockTransaction, BlockVerbosity2][]> {
+  if (blockHashes.length === 0) {
+    return [];
+  }
+  const blocks: (BlockVerbosity2 | BitcoinRpcError)[] = await rpcBatch(
+    blockHashes.map((blockhash) => ({
+      method: 'getblock',
+      params: {
+        blockhash,
+        verbosity: 2,
+      },
+    })),
+  );
+  const filteredBlocks = blocks.filter((block) => {
+    if (block instanceof BitcoinRpcError) {
+      if (!block.isNotFound()) {
+        throw block;
+      }
+      return false;
+    }
+    return true;
+  }) as BlockVerbosity2[];
+  return filteredBlocks.flatMap(
+    (block) => block.tx.map((someTx): [BlockTransaction, BlockVerbosity2] => [someTx, block]),
+  );
+}
+
+function fixLocalAddress(address: string): string {
+  const parts = address.split(':');
+  if (
+    process.env.BITCOIN_IP
+    && (parts[0] === 'tcp')
+    && ['//127.0.0.1', '//0.0.0.0', '[::1]'].includes(parts[1])
+  ) {
+    return `tcp://${process.env.BITCOIN_IP}:${parts.slice(2).join(':')}`;
+  }
+  return address;
+}
+
+export interface ZmqNotificationAddresses {
+  sequence?: string;
+  rawtx: string;
+}
+
+export async function getNotificationAddresses(): Promise<ZmqNotificationAddresses | undefined> {
+  const zmqNotifications = await getZmqNotifications();
+  if (!zmqNotifications) {
+    return undefined;
+  }
+  const rawtx = zmqNotifications.find(
+    (zmqNotification) => (zmqNotification.type === 'pubrawtx'),
+  )?.address;
+  if (!rawtx) {
+    return undefined;
+  }
+  const sequence = zmqNotifications.find(
+    (zmqNotification) => ['sequence', 'pubsequence'].includes(zmqNotification.type),
+  )?.address;
+  return {
+    sequence: sequence && fixLocalAddress(sequence),
+    rawtx: fixLocalAddress(rawtx),
+  };
+}

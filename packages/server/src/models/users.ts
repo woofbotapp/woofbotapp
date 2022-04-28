@@ -16,6 +16,8 @@ const schema = new Schema<UserFields & TimeFields>({
   watchReboot: { type: Boolean, required: true, index: true },
 }, { timestamps: true });
 
+schema.index({ createdAt: 1 });
+
 export const defaultUserProperties: Omit<
   UserFields, 'telegramFromId' | 'telegramUsername' | 'telegramChatId'
 > = {

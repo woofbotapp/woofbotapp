@@ -7,6 +7,7 @@ export const apiRoutes = {
   settingsGeneral: '/api/settings/general',
   settingsTelegram: '/api/settings/telegram',
   stats: '/api/stats',
+  users: '/api/users',
 };
 
 export const pageRoutes = {

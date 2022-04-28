@@ -8,6 +8,7 @@ import { verifyAuthToken } from '../../models/refresh-tokens';
 import apiAuthRouter from './auth';
 import apiAuthLogoutRouter from './auth/logout';
 import apiSettingsRouter from './settings';
+import apiUsersRouter from './users';
 
 const rebootAt = new Date();
 
@@ -73,6 +74,8 @@ apiRouter.get('/stats', expressAsyncHandler(async (req, res) => {
     rebootAt,
   });
 }));
+
+apiRouter.use('/users', apiUsersRouter);
 
 apiRouter.use((req, res) => {
   res.status(404).json({

@@ -86,4 +86,12 @@ export const api = {
     body: JSON.stringify(data),
     ...params,
   }).then(handleJsonResponse) as Promise<T>,
+  delete: <T>(url: string, params?: object) => window.fetch(url, {
+    method: 'DELETE',
+    headers: {
+      'Content-Type': 'application/json',
+      ...sessionStorageToken(),
+    },
+    ...params,
+  }).then(handleJsonResponse) as Promise<T>,
 };

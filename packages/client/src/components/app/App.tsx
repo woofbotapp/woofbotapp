@@ -7,6 +7,7 @@ import ChangePassword from '../change-password/ChangePassword';
 import Dashboard from '../dashboard/Dashboard';
 import Logout from '../logout/Logout';
 import HomeContent from '../dashboard/HomeContent';
+import UsersContent from '../dashboard/UsersContent';
 
 export default function App() {
   return (
@@ -16,6 +17,7 @@ export default function App() {
       <Route path={pageRoutes.logout} element={<Logout />} />
       <Route path={pageRoutes.home} element={<Dashboard />}>
         <Route index element={<HomeContent />} />
+        <Route path={pageRoutes.users} element={<UsersContent />} />
       </Route>
       <Route path="*" element={<Navigate to={pageRoutes.home} replace />} />
     </Routes>

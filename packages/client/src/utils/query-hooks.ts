@@ -1,5 +1,6 @@
 import {
-  useQuery, QueryFunction, UseQueryResult, UseQueryOptions, QueryKey,
+  useQuery, QueryFunction, UseQueryResult, UseQueryOptions, QueryKey, useInfiniteQuery,
+  UseInfiniteQueryOptions, UseInfiniteQueryResult,
 } from 'react-query';
 import { useNavigate } from 'react-router-dom';
 
@@ -7,6 +8,7 @@ import { apiRoutes, pageRoutes } from '../routes';
 import {
   api, AuthTokensResponse, saveAuthTokens, deleteAuthTokens, isAuthError, noAuthTokenError,
 } from './api';
+import { CursorPaginationLinksContainer } from './jsonapi';
 
 const refreshTokenGraceMs = 360_000; // 6 minutes before expiration
 
@@ -76,6 +78,28 @@ export function useAuthQuery<
     queryKey,
     wrappedQueryFn,
     options,
+  );
+  return context;
+}
+
+export function useInfiniteAuthQuery<
+  TQueryFnData extends CursorPaginationLinksContainer = CursorPaginationLinksContainer,
+  TError = unknown,
+  TData = TQueryFnData,
+  TQueryKey extends QueryKey = QueryKey
+>(
+  queryKey: TQueryKey,
+  queryFn: QueryFunction<TQueryFnData, TQueryKey>,
+  options?: Omit<UseInfiniteQueryOptions<TQueryFnData, TError, TData, TQueryFnData, TQueryKey>, 'queryKey' | 'queryFn'>,
+): UseInfiniteQueryResult<TData, TError> {
+  const wrappedQueryFn = wrapQueryFunction(queryFn);
+  const context = useInfiniteQuery(
+    queryKey,
+    wrappedQueryFn,
+    {
+      ...options,
+      getNextPageParam: (lastPage) => lastPage.links.next,
+    },
   );
   return context;
 }

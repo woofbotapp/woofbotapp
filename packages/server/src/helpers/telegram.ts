@@ -6,6 +6,9 @@ import { SettingsModel } from '../models/settings';
 import { defaultUserProperties, UsersModel, UserDocument } from '../models/users';
 import { WatchedAddressesModel } from '../models/watched-addresses';
 import { TransactionStatus, WatchedTransactionsModel } from '../models/watched-transactions';
+import { unwatchUnusedAddresses } from '../controllers/addresses';
+import { unwatchUnusedTransactions } from '../controllers/transactions';
+import { deleteUser } from '../controllers/users';
 import {
   bitcoindWatcher, BitcoindWatcherEventName, NewTransactionAnalysisEvent, TransactionAnalysis,
   transactionAnalysisToString, NewAddressPaymentEvent,
@@ -50,7 +53,7 @@ const messageQueueMaxSize = 10_000;
 const transactionAnalysisTimeoutMs = 300_000;
 const blockSkippedWarningBackoffMs = 300_000;
 
-class TelegrafManager {
+export class TelegrafManager {
   private internalBot: Telegraf | undefined = undefined;
 
   private internalStatus: TelegramStatus = TelegramStatus.Unset;
@@ -967,7 +970,7 @@ class TelegrafManager {
         $in: transactions.map((transaction) => transaction._id),
       },
     });
-    TelegrafManager.unwatchUnusedTransactions(
+    await unwatchUnusedTransactions(
       transactions.map(({ txid }) => txid),
     );
     ctx.replyWithMarkdownV2(escapeMarkdown(
@@ -1121,7 +1124,7 @@ class TelegrafManager {
         $in: watchedAddresses.map(({ _id }) => _id),
       },
     });
-    TelegrafManager.unwatchUnusedAddresses(
+    await unwatchUnusedAddresses(
       watchedAddresses.map(({ address }) => address),
     );
     ctx.replyWithMarkdownV2(escapeMarkdown(
@@ -1215,66 +1218,14 @@ class TelegrafManager {
   }
 
   static async [BotCommandName.Quit](ctx: TextContext) {
-    const user = await UsersModel.findOneAndDelete(
-      {
-        telegramFromId: ctx.from?.id ?? '',
-      },
-    );
+    const user = await deleteUser({
+      telegramFromId: ctx.from?.id ?? '',
+    });
     if (!user) {
       ctx.replyWithMarkdownV2(notFoundMessage);
       return;
     }
-    const transactions = await WatchedTransactionsModel.find({
-      userId: user._id,
-    });
-    if (transactions.length) {
-      await WatchedTransactionsModel.deleteMany({
-        userId: user._id,
-      });
-      TelegrafManager.unwatchUnusedTransactions(
-        transactions.map(({ txid }) => txid),
-      );
-    }
-    const addresses = await WatchedAddressesModel.find({
-      userId: user._id,
-    });
-    if (addresses.length) {
-      await WatchedTransactionsModel.deleteMany({
-        userId: user._id,
-      });
-      TelegrafManager.unwatchUnusedAddresses(
-        addresses.map(({ address }) => address),
-      );
-    }
     ctx.replyWithMarkdownV2(escapeMarkdown('Woof! Goodbye.'));
-  }
-
-  static async unwatchUnusedTransactions(txids: string[]) {
-    const existingTransactions = await WatchedTransactionsModel.find({
-      txid: {
-        $in: txids,
-      },
-    });
-    const existingTxids = new Set(existingTransactions.map(({ txid }) => txid));
-    for (const txid of txids) {
-      if (!existingTxids.has(txid)) {
-        bitcoindWatcher.unwatchTransaction(txid);
-      }
-    }
-  }
-
-  static async unwatchUnusedAddresses(addresses: string[]) {
-    const existingAddressDocs = await WatchedAddressesModel.find({
-      address: {
-        $in: addresses,
-      },
-    });
-    const existingAddresses = new Set(existingAddressDocs.map(({ address }) => address));
-    for (const address of addresses) {
-      if (!existingAddresses.has(address)) {
-        bitcoindWatcher.unwatchAddress(address);
-      }
-    }
   }
 }
 

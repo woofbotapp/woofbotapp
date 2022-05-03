@@ -17,8 +17,10 @@ import DialogContent from '@mui/material/DialogContent';
 import DialogContentText from '@mui/material/DialogContentText';
 import DialogTitle from '@mui/material/DialogTitle';
 import Typography from '@mui/material/Typography';
+import { Link } from 'react-router-dom';
 
 import { useMutationDeleteUser, useUsers } from '../../api/users';
+import { pageRoutes } from '../../routes';
 import Copyright from '../copyright/Copyright';
 import Title from './Title';
 
@@ -84,7 +86,15 @@ export default function UsersContent() {
                           {
                             page.data.map(({ id, attributes }) => (
                               <TableRow key={id}>
-                                <TableCell>{id}</TableCell>
+                                <TableCell>
+                                  <Typography
+                                    component={Link}
+                                    to={`${pageRoutes.users}/${encodeURIComponent(id)}`}
+                                    color="primary"
+                                  >
+                                    {id}
+                                  </Typography>
+                                </TableCell>
                                 <TableCell>
                                   {attributes.telegramFromId}
                                   {

@@ -17,7 +17,9 @@ function NavListItemButton({ icon, primary, to }: NavListItemButtonProps) {
   const location = useLocation();
   const { pathname } = useResolvedPath(to);
 
-  const isSelected = (pathname === location.pathname);
+  const isSelected = (
+    (location.pathname === pathname) || location.pathname.startsWith(`${pathname}/`)
+  );
 
   return (
     <ListItemButton

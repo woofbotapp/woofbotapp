@@ -4,6 +4,8 @@ import Router from 'express';
 import { Types } from 'mongoose';
 
 import { UsersModel } from '../../models/users';
+import { WatchedAddressesModel } from '../../models/watched-addresses';
+import { WatchedTransactionsModel } from '../../models/watched-transactions';
 import { deleteUser } from '../../controllers/users';
 import logger from '../../helpers/logger';
 import { errorString } from '../../helpers/error';
@@ -120,6 +122,80 @@ apiUsersRouter.delete('/:userId([0-9a-f]{24})', expressAsyncHandler(async (req, 
     logger.error(`Failed to send notification to deleted user: ${errorString(error)}`);
   }
   res.json({ ok: true });
+}));
+
+apiUsersRouter.get('/:userId([0-9a-f]{24})', expressAsyncHandler(async (req, res) => {
+  const user = await UsersModel.findOne({
+    _id: new Types.ObjectId(req.params.userId),
+  });
+  if (!user) {
+    res.status(404).json({
+      error: 'User not found',
+    });
+    return;
+  }
+  const watchedAddresses = await WatchedAddressesModel.find({
+    userId: user._id,
+  });
+  const watchedTransactions = await WatchedTransactionsModel.find({
+    userId: user._id,
+  });
+  res.json({
+    data: {
+      type: 'users',
+      id: user.id,
+      attributes: Object.fromEntries(
+        [
+          'telegramFromId',
+          'telegramUsername',
+          'telegramChatId',
+          'watchReboot',
+          'updatedAt',
+          'createdAt',
+        ].map((key) => [key, user[key]]),
+      ),
+      relationships: {
+        watchedAddresses: {
+          data: watchedAddresses.map((doc) => ({
+            type: 'watched-addresses',
+            id: doc.id,
+          })),
+        },
+        watchedTransactions: {
+          data: watchedTransactions.map((doc) => ({
+            type: 'watched-transactions',
+            id: doc.id,
+          })),
+        },
+      },
+    },
+    included: [
+      ...watchedAddresses.map((doc) => ({
+        type: 'watched-addresses',
+        id: doc.id,
+        attributes: Object.fromEntries([
+          'address',
+          'nickname',
+          'createdAt',
+          'updatedAt',
+        ].map((key) => [key, doc[key]])),
+      })),
+      ...watchedTransactions.map((doc) => ({
+        type: 'watched-transactions',
+        id: doc.id,
+        attributes: Object.fromEntries([
+          'txid',
+          'nickname',
+          'status',
+          'blockHashes',
+          'confirmations',
+          'conflictingTransactions',
+          'createdAt',
+          'updatedAt',
+        ].map((key) => [key, doc[key]])),
+      })),
+    ],
+  });
 }));
 
 export default apiUsersRouter;

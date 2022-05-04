@@ -14,10 +14,7 @@ import { zeroObjectId } from './helpers/mongo';
 import { DecodedAuthToken } from './models/refresh-tokens';
 import telegramManager, { escapeMarkdown } from './helpers/telegram';
 import { UsersModel } from './models/users';
-import {
-  bitcoindWatcher, BitcoindWatcherEventName, NewBlockAnalyzedEvent, TransactionAnalysis,
-} from './helpers/bitcoind-watcher';
-import { errorString } from './helpers/error';
+import { bitcoindWatcher, TransactionAnalysis } from './helpers/bitcoind-watcher';
 import { WatchedTransactionsModel } from './models/watched-transactions';
 import { WatchedAddressesModel } from './models/watched-addresses';
 
@@ -111,24 +108,6 @@ app.use((err, _req, res, _next) => {
   if (settings.telegramToken) {
     await telegramManager.startBot(settings.telegramToken);
   }
-  bitcoindWatcher.on(
-    BitcoindWatcherEventName.NewBlockAnalyzed,
-    async (event: NewBlockAnalyzedEvent) => {
-      try {
-        await SettingsModel.updateOne(
-          { _id: zeroObjectId },
-          {
-            $set: {
-              analyzedBlockHashes: event.blockHashes,
-              bestBlockHeight: event.bestBlockHeight,
-            },
-          },
-        );
-      } catch (error) {
-        logger.error(`Failed to save analyzed block hashes: ${errorString(error)}`);
-      }
-    },
-  );
   const watchedAddresses = await WatchedAddressesModel.find({});
   const transactions = await WatchedTransactionsModel.find({});
   const analysisByTxid = new Map<string, TransactionAnalysis>(transactions.map((transaction) => [

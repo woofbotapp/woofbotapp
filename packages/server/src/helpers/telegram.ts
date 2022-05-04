@@ -11,7 +11,7 @@ import { unwatchUnusedTransactions } from '../controllers/transactions';
 import { deleteUser } from '../controllers/users';
 import {
   bitcoindWatcher, BitcoindWatcherEventName, NewTransactionAnalysisEvent, TransactionAnalysis,
-  transactionAnalysisToString, NewAddressPaymentEvent,
+  transactionAnalysisToString, NewAddressPaymentEvent, NewBlockAnalyzedEvent,
 } from './bitcoind-watcher';
 import { errorString } from './error';
 import logger from './logger';
@@ -91,6 +91,46 @@ export class TelegrafManager {
       BitcoindWatcherEventName.BlocksSkipped,
       () => this.onBlocksSkipped(),
     );
+    bitcoindWatcher.on(
+      BitcoindWatcherEventName.NewBlockAnalyzed,
+      (event) => this.onNewBlockAnalyzed(event),
+    );
+  }
+
+  private async onNewBlockAnalyzed(event: NewBlockAnalyzedEvent) {
+    try {
+      await SettingsModel.updateOne(
+        { _id: zeroObjectId },
+        {
+          $set: {
+            analyzedBlockHashes: event.blockHashes,
+            bestBlockHeight: event.bestBlockHeight,
+          },
+        },
+      );
+      const watchNewBlocksUsers = await UsersModel.find({
+        watchNewBlocks: true,
+      });
+      if (watchNewBlocksUsers.length > 0) {
+        const newBlocksHashes = event.blockHashes.slice(-event.newBlocks);
+        const messages = newBlocksHashes.map(
+          (blockHash, index) => `Block ${blockHash} at height ${
+            event.bestBlockHeight - event.newBlocks + index + 1
+          }`,
+        );
+        const finalMessage = escapeMarkdown(`🧱 Woof! ${
+          (event.newBlocks === 1) ? 'A new block was' : 'New blocks were'
+        } mined: ${messages.join(', ')}.`);
+        for await (const user of watchNewBlocksUsers) {
+          await this.sendMessage({
+            chatId: user.telegramChatId,
+            text: finalMessage,
+          });
+        }
+      }
+    } catch (error) {
+      logger.error(`Failed to handle analyzed block hashes: ${errorString(error)}`);
+    }
   }
 
   private async onBlocksSkipped() {
@@ -111,9 +151,16 @@ export class TelegrafManager {
         ].map((userId) => [`${userId}`, userId])).values(),
       ];
       const users = await UsersModel.find({
-        _id: {
-          $in: userIds,
-        },
+        $or: [
+          {
+            _id: {
+              $in: userIds,
+            },
+          },
+          {
+            watchNewBlocks: true,
+          },
+        ],
       });
       await Promise.all(
         users.map((user) => this.sendMessage({
@@ -760,6 +807,42 @@ export class TelegrafManager {
     ctx.replyWithMarkdownV2(escapeMarkdown('Stopped watching reboots.'));
   }
 
+  static async [BotCommandName.WatchNewBlocks](ctx: TextContext) {
+    const found = await UsersModel.findOneAndUpdate(
+      {
+        telegramFromId: ctx.from?.id ?? '',
+      },
+      {
+        $set: {
+          watchNewBlocks: true,
+        },
+      },
+    );
+    if (!found) {
+      ctx.replyWithMarkdownV2(notFoundMessage);
+      return;
+    }
+    ctx.replyWithMarkdownV2(escapeMarkdown('Started watching new blocks.'));
+  }
+
+  static async [BotCommandName.UnwatchNewBlocks](ctx: TextContext) {
+    const found = await UsersModel.findOneAndUpdate(
+      {
+        telegramFromId: ctx.from?.id ?? '',
+      },
+      {
+        $set: {
+          watchNewBlocks: false,
+        },
+      },
+    );
+    if (!found) {
+      ctx.replyWithMarkdownV2(notFoundMessage);
+      return;
+    }
+    ctx.replyWithMarkdownV2(escapeMarkdown('Stopped watching new blocks.'));
+  }
+
   async [BotCommandName.WatchTransaction](ctx: TextContext, user: UserDocument) {
     const [commandName, ...args] = ctx.message.text.split(/\s+/);
     if (args.length === 0) {
@@ -1180,6 +1263,9 @@ export class TelegrafManager {
     const lines: string[] = [];
     if (user.watchReboot) {
       lines.push(escapeMarkdown('You are watching server reboots.'));
+    }
+    if (user.watchNewBlocks) {
+      lines.push(escapeMarkdown('You are watching new blocks.'));
     }
     const watchedTransactions = await WatchedTransactionsModel.find({
       userId: user._id,

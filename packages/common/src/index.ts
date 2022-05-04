@@ -22,6 +22,8 @@ export enum BotCommandName {
   UnwatchAddresses = 'unwatchaddresses',
   Wads = 'wads',
   Uwads = 'uwads',
+  WatchNewBlocks = 'watchnewblocks',
+  UnwatchNewBlocks = 'unwatchnewblocks',
   ListWatches = 'listwatches',
   MempoolLinks = 'mempoollinks',
 }
@@ -51,6 +53,14 @@ export const telegramCommands: BotCommand[] = [
   {
     command: BotCommandName.UnwatchReboot,
     description: 'Stop getting notification when server reboots.',
+  },
+  {
+    command: BotCommandName.WatchNewBlocks,
+    description: 'Get notifications new blocks are mined.',
+  },
+  {
+    command: BotCommandName.UnwatchNewBlocks,
+    description: 'Stop getting notification when new blocks are mined.',
   },
   {
     command: BotCommandName.WatchTransaction,

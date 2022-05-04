@@ -11,6 +11,7 @@ interface UserAttributes {
   telegramFromId: string;
   telegramUsername: string;
   watchReboot: boolean;
+  watchNewBlocks: boolean;
   createdAt: string;
   updatedAt: string;
 }

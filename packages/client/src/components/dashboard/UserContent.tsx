@@ -278,6 +278,11 @@ function UserContentByUserId({
                     {' '}
                     {data.data.attributes.watchReboot ? 'On' : 'Off'}
                   </Typography>
+                  <Typography component="p">
+                    New block minings:
+                    {' '}
+                    {data.data.attributes.watchNewBlocks ? 'On' : 'Off'}
+                  </Typography>
                 </Paper>
               </Grid>
               <Grid item xs={12}>

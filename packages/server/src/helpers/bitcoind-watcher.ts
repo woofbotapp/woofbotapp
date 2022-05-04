@@ -42,6 +42,7 @@ export interface NewTransactionAnalysisEvent {
 export interface NewBlockAnalyzedEvent {
   blockHashes: string[];
   bestBlockHeight: number;
+  newBlocks: number;
 }
 
 export interface NewAddressPaymentEvent {
@@ -691,6 +692,7 @@ class BitcoindWatcher extends EventEmitter {
     this.safeAsyncEmit(BitcoindWatcherEventName.NewBlockAnalyzed, {
       blockHashes: this.analyzedBlockHashes,
       bestBlockHeight: newBlocks.slice(-1)[0]!.height,
+      newBlocks: newBlocks.length,
     });
     const confirmedBlockHashes = attachedBlockHashes.slice(0, -maxAnalyzedBlocks).reverse();
     logger.info(`analyzeNewBlocks: confirmedBlockHashes: ${confirmedBlockHashes.join(', ')}`);

@@ -17,6 +17,7 @@ import { UsersModel } from './models/users';
 import { bitcoindWatcher, TransactionAnalysis } from './helpers/bitcoind-watcher';
 import { WatchedTransactionsModel } from './models/watched-transactions';
 import { WatchedAddressesModel } from './models/watched-addresses';
+import { priceWatcher } from './helpers/price-watcher';
 
 declare global {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -138,6 +139,16 @@ app.use((err, _req, res, _next) => {
       chatId: user.telegramChatId,
       text: rebootMessage,
     });
+  }
+  const watchPriceChangeUsers = await UsersModel.find({
+    watchPriceChange: {
+      $exists: true,
+    },
+  });
+  for await (const user of watchPriceChangeUsers) {
+    if (user.watchPriceChange) {
+      await priceWatcher.watchPriceChange(user._id.toString(), user.watchPriceChange);
+    }
   }
   app.listen(port, () => {
     logger.info(`app ${AppName} started at http://localhost:${port}`);

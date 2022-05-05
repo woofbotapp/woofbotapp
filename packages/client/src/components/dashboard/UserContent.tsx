@@ -283,6 +283,15 @@ function UserContentByUserId({
                     {' '}
                     {data.data.attributes.watchNewBlocks ? 'On' : 'Off'}
                   </Typography>
+                  <Typography component="p">
+                    Watch price change:
+                    {' '}
+                    {
+                      (data.data.attributes.watchPriceChange === undefined)
+                        ? 'Off'
+                        : `Every $${data.data.attributes.watchPriceChange}`
+                    }
+                  </Typography>
                 </Paper>
               </Grid>
               <Grid item xs={12}>

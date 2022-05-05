@@ -1,6 +1,7 @@
 import { TelegramStatus, telegramCommands, BotCommandName } from '@woofbot/common';
 import { Context, Telegraf, TelegramError } from 'telegraf';
 import { validate } from 'bitcoin-address-validation';
+import { Types } from 'mongoose';
 
 import { SettingsModel } from '../models/settings';
 import { defaultUserProperties, UsersModel, UserDocument } from '../models/users';
@@ -16,6 +17,7 @@ import {
 import { errorString } from './error';
 import logger from './logger';
 import { zeroObjectId } from './mongo';
+import { PriceChangeEvent, priceWatcher, PriceWatcherEventName } from './price-watcher';
 
 interface TextMessage {
   text: string;
@@ -95,6 +97,92 @@ export class TelegrafManager {
       BitcoindWatcherEventName.NewBlockAnalyzed,
       (event) => this.onNewBlockAnalyzed(event),
     );
+    priceWatcher.on(
+      PriceWatcherEventName.ConsecutiveApiErrors,
+      () => this.onConsecutivePriceApiErrors(),
+    );
+    priceWatcher.on(
+      PriceWatcherEventName.ApiResponsiveAgain,
+      () => this.onPriceApiResponsiveAgain(),
+    );
+    priceWatcher.on(
+      PriceWatcherEventName.PriceChange,
+      (event) => this.onPriceChange(event),
+    );
+  }
+
+  private async onConsecutivePriceApiErrors() {
+    try {
+      const users = await UsersModel.find({
+        watchPriceChange: {
+          $exists: true,
+        },
+      });
+      const message = escapeMarkdown(
+        '⚠️ Woof! There are problems connecting to CoinGecko Api to get the price of Bitcoin.',
+      );
+      for await (const user of users) {
+        await this.sendMessage({
+          chatId: user.telegramChatId,
+          text: message,
+        });
+      }
+    } catch (error) {
+      logger.error(`Failed to notify price api errors: ${errorString(error)}`);
+    }
+  }
+
+  private async onPriceApiResponsiveAgain() {
+    try {
+      const users = await UsersModel.find({
+        watchPriceChange: {
+          $exists: true,
+        },
+      });
+      const message = escapeMarkdown([
+        '💸 Woof! CoinGecko Api (to get the price of Bitcoin) is responsive again after some',
+        'time that it was not.',
+      ].join(' '));
+      for await (const user of users) {
+        await this.sendMessage({
+          chatId: user.telegramChatId,
+          text: message,
+        });
+      }
+    } catch (error) {
+      logger.error(`Failed to notify price api responsive-again: ${errorString(error)}`);
+    }
+  }
+
+  private async onPriceChange(event: PriceChangeEvent) {
+    try {
+      logger.info(`onPriceChange: ${JSON.stringify(event)}`);
+      const user = await UsersModel.findOne({
+        _id: new Types.ObjectId(event.id),
+        watchPriceChange: event.delta,
+      });
+      if (!user) {
+        logger.info('onPriceChange: user not found');
+        priceWatcher.unwatchPriceChange(event.id);
+        return;
+      }
+      const [oldMin] = event.oldThreshold;
+      const [newMin, newMax] = event.newThreshold;
+      const isIncrease = (oldMin < newMin);
+      const message = escapeMarkdown(
+        `${isIncrease ? '📈' : '📉'} Woof! The price of Bitcoin on CoinGecko is $${
+          event.newPrice.toFixed(2)
+        }. I will check the price every minute and let you know when the price goes below $${
+          newMin
+        } or above $${newMax}.`,
+      );
+      await this.sendMessage({
+        chatId: user.telegramChatId,
+        text: message,
+      });
+    } catch (error) {
+      logger.error(`Failed to notify price change: ${errorString(error)}`);
+    }
   }
 
   private async onNewBlockAnalyzed(event: NewBlockAnalyzedEvent) {
@@ -1221,6 +1309,75 @@ export class TelegrafManager {
     return TelegrafManager[BotCommandName.UnwatchAddresses](ctx, user);
   }
 
+  static async [BotCommandName.WatchPriceChange](ctx: TextContext, user: UserDocument) {
+    const [commandName, ...args] = ctx.message.text.split(/\s+/);
+    if ((args.length === 0) || (args.length > 1)) {
+      ctx.replyWithMarkdownV2(escapeMarkdown([
+        `Syntax: "${commandName} <price-delta-in-usd>"`,
+        `i.e. To get a notification when the price changes by $1000, use "${commandName} 1000".`,
+      ].join('\n')));
+      return;
+    }
+    const delta = Number(args[0]);
+    if ((delta <= 0) || !Number.isSafeInteger(delta)) {
+      ctx.replyWithMarkdownV2(escapeMarkdown('Invalid value, must be a positive integer.'));
+      return;
+    }
+    await UsersModel.updateOne(
+      {
+        _id: user._id,
+      },
+      {
+        $set: {
+          watchPriceChange: delta,
+        },
+      },
+    );
+    const result = await priceWatcher.watchPriceChange(user._id.toString(), delta);
+    if (result) {
+      const [lastPrice, minPrice, maxPrice] = result;
+      ctx.replyWithMarkdownV2(escapeMarkdown([
+        `The current price on CoinGecko is $${lastPrice.toFixed(2)}. I will check the price every`,
+        `minute and let you know when the price goes below $${minPrice} or above $${maxPrice}.`,
+      ].join(' ')));
+    } else {
+      ctx.replyWithMarkdownV2(escapeMarkdown([
+        'Price watch has been set, but there seems to be a problem fetching the price from',
+        'CoinGecko.',
+      ].join(' ')));
+    }
+  }
+
+  static async [BotCommandName.Wpc](ctx: TextContext, user: UserDocument) {
+    return TelegrafManager[BotCommandName.WatchPriceChange](ctx, user);
+  }
+
+  static async [BotCommandName.UnwatchPriceChange](ctx: TextContext, user: UserDocument) {
+    await UsersModel.updateOne(
+      {
+        _id: user._id,
+      },
+      {
+        $unset: {
+          watchPriceChange: true,
+        },
+      },
+    );
+    ctx.replyWithMarkdownV2(escapeMarkdown(
+      'Stopped watching price changes.',
+    ));
+    if (
+      user.watchPriceChange
+      && !await UsersModel.findOne({ watchPriceChange: user.watchPriceChange })
+    ) {
+      priceWatcher.unwatchPriceChange(user._id.toString());
+    }
+  }
+
+  static async [BotCommandName.Uwpc](ctx: TextContext, user: UserDocument) {
+    return TelegrafManager[BotCommandName.UnwatchPriceChange](ctx, user);
+  }
+
   static async [BotCommandName.MempoolLinks](ctx: TextContext) {
     const replyToMessage = ctx.message.reply_to_message;
     if (!replyToMessage) {
@@ -1266,6 +1423,9 @@ export class TelegrafManager {
     }
     if (user.watchNewBlocks) {
       lines.push(escapeMarkdown('You are watching new blocks.'));
+    }
+    if (user.watchPriceChange) {
+      lines.push(escapeMarkdown(`You are watching price changes of $${user.watchPriceChange}.`));
     }
     const watchedTransactions = await WatchedTransactionsModel.find({
       userId: user._id,

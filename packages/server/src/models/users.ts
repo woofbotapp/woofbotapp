@@ -8,6 +8,7 @@ interface UserFields {
   telegramChatId: number;
   watchReboot: boolean;
   watchNewBlocks: boolean;
+  watchPriceChange?: number;
 }
 
 const schema = new Schema<UserFields & TimeFields>({
@@ -16,6 +17,7 @@ const schema = new Schema<UserFields & TimeFields>({
   telegramChatId: { type: Number, required: true },
   watchReboot: { type: Boolean, required: true, index: true },
   watchNewBlocks: { type: Boolean, required: true, index: true },
+  watchPriceChange: { type: Number, required: false, index: true },
 }, { timestamps: true });
 
 schema.index({ createdAt: 1 });

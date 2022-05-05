@@ -22,6 +22,10 @@ export enum BotCommandName {
   UnwatchAddresses = 'unwatchaddresses',
   Wads = 'wads',
   Uwads = 'uwads',
+  WatchPriceChange = 'watchpricechange',
+  UnwatchPriceChange = 'unwatchpricechange',
+  Wpc = 'wpc',
+  Uwpc = 'uwpc',
   WatchNewBlocks = 'watchnewblocks',
   UnwatchNewBlocks = 'unwatchnewblocks',
   ListWatches = 'listwatches',
@@ -100,6 +104,22 @@ export const telegramCommands: BotCommand[] = [
   {
     command: BotCommandName.Uwads,
     description: `Short for /${BotCommandName.UnwatchAddresses}.`,
+  },
+  {
+    command: BotCommandName.WatchPriceChange,
+    description: 'Watch changes in the price of Bitcoin (in USD).',
+  },
+  {
+    command: BotCommandName.Wpc,
+    description: `Short for /${BotCommandName.WatchPriceChange}.`,
+  },
+  {
+    command: BotCommandName.UnwatchPriceChange,
+    description: 'Stop getting notifications about changes in the price of Bitcoin.',
+  },
+  {
+    command: BotCommandName.Uwpc,
+    description: `Short for /${BotCommandName.UnwatchPriceChange}.`,
   },
   {
     command: BotCommandName.MempoolLinks,

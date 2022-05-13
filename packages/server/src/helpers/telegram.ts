@@ -978,6 +978,15 @@ export class TelegrafManager {
     ctx.replyWithMarkdownV2(escapeMarkdown(
       'Analyzing the transaction and looking for conflicts in the recent blocks. Please hodl.',
     ));
+    // Run asyncly
+    this.handleTransactionWatchRequest(user, txid, nickname);
+  }
+
+  private async handleTransactionWatchRequest(
+    user: UserDocument,
+    txid: string,
+    nickname: string,
+  ): Promise<void> {
     const isQueueSet = Boolean(this.newTransactionAnalysesQueue);
     if (!isQueueSet) {
       this.newTransactionAnalysesQueue = [];
@@ -1077,9 +1086,9 @@ export class TelegrafManager {
     } catch (error) {
       await this.sendMessage({
         chatId: user.telegramChatId,
-        text: escapeMarkdown('⚠️ Woof! Failed to watch the transaction.'),
+        text: escapeMarkdown('⚠️ Woof! Failed to initialize transaction watch.'),
       });
-      throw error;
+      logger.error(`Failed to initialize transaction watch: ${errorString(error)}`);
     } finally {
       if (!isQueueSet) {
         const queue = this.newTransactionAnalysesQueue;

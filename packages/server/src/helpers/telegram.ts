@@ -834,7 +834,9 @@ export class TelegrafManager {
           );
         }
       });
-      await bot.launch();
+      await bot.launch({
+        dropPendingUpdates: true,
+      });
       await bot.telegram.setMyCommands(telegramCommands);
       this.internalBot = bot;
       this.internalStatus = TelegramStatus.Running;

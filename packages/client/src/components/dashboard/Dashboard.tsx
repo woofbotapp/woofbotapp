@@ -134,7 +134,7 @@ export default function Dashboard() {
             noWrap
             sx={{ flexGrow: 1 }}
           >
-            WoofBot Dashboard - v0.1.0 (beta)
+            WoofBot Dashboard - v0.2.0 (beta)
           </Typography>
           <IconButton
             color="inherit"

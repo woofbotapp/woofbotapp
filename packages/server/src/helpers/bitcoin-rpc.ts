@@ -135,8 +135,8 @@ interface ZmqNotification {
 type BitcoinRpcResponse<T> = BitcoinRpcSuccessResponse<T> | BitcoinRpcFailResponse;
 
 const bitcoinRpcUrl = `http://${
-  process.env.BITCOIN_IP || 'localhost'
-}:${process.env.BITCOIN_RPC_PORT || 18444}`;
+  process.env.APP_BITCOIN_NODE_IP || 'localhost'
+}:${process.env.APP_BITCOIN_RPC_PORT || 18444}`;
 
 const bitcoinRpcHttpOptions = {
   method: 'POST',
@@ -144,9 +144,9 @@ const bitcoinRpcHttpOptions = {
     'Content-Type': 'application/json',
     Accept: 'application/json',
     Authorization: `Basic ${Buffer.from(`${
-      process.env.BITCOIN_RPC_USER || 'bitcoinrpcuser'
+      process.env.APP_BITCOIN_RPC_USER || 'bitcoinrpcuser'
     }:${
-      process.env.BITCOIN_RPC_PASS || 'bitcoinrpcpassword'
+      process.env.APP_BITCOIN_RPC_PASS || 'bitcoinrpcpassword'
     }`).toString('base64')}`,
   },
 };
@@ -385,11 +385,11 @@ export async function getBlockTransactions(
 function fixLocalAddress(address: string): string {
   const parts = address.split(':');
   if (
-    process.env.BITCOIN_IP
+    process.env.APP_BITCOIN_NODE_IP
     && (parts[0] === 'tcp')
     && ['//127.0.0.1', '//0.0.0.0', '[::1]'].includes(parts[1])
   ) {
-    return `tcp://${process.env.BITCOIN_IP}:${parts.slice(2).join(':')}`;
+    return `tcp://${process.env.APP_BITCOIN_NODE_IP}:${parts.slice(2).join(':')}`;
   }
   return address;
 }

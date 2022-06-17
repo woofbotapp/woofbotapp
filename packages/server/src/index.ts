@@ -88,8 +88,8 @@ app.use((err, _req, res, _next) => {
 (async () => {
   logger.info(`NODE_ENV: ${process.env.NODE_ENV}`);
   for (const envKey of [
-    'MONGODB_URI', 'APP_SEED', 'APP_PASSWORD', 'BITCOIN_IP', 'BITCOIN_RPC_USER',
-    'BITCOIN_RPC_PASS', 'BITCOIN_RPC_PORT',
+    'MONGODB_URI', 'APP_SEED', 'APP_PASSWORD', 'APP_BITCOIN_NODE_IP', 'APP_BITCOIN_RPC_USER',
+    'APP_BITCOIN_RPC_PASS', 'APP_BITCOIN_RPC_PORT', 'APP_PORT',
   ]) {
     logger.info(`Env var ${envKey} was ${process.env[envKey] ? 'found' : 'not found'}`);
   }

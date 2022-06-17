@@ -30,7 +30,7 @@ declare global {
 }
 
 const clientPath = '../../client/build';
-const port = 8080; // default port to listen
+const port = Number(process.env.APP_PORT) || 8080; // default port to listen
 const mongodbUri = process.env.MONGODB_URI || 'mongodb://localhost:27017/woofbot';
 const rebootMessage = escapeMarkdown(`\
 ⚠️ Woof! The server has rebooted, and some events might have been missed. \

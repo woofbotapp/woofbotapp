@@ -8,6 +8,18 @@ export interface AuthTokensResponse {
   expiresIn: number;
 }
 
+interface SuccessPasswordlessLoginResponse extends AuthTokensResponse {
+  ok: true;
+}
+
+interface FailPasswordlessLoginResponse {
+  ok: false;
+}
+
+export type PasswordlessLoginResponse = (
+  SuccessPasswordlessLoginResponse | FailPasswordlessLoginResponse
+);
+
 export function saveAuthTokens({
   authToken, refreshToken, expiresIn,
 }: AuthTokensResponse) {

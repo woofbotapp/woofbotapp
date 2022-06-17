@@ -30,6 +30,17 @@ const promisifiedScrypt = (
   });
 });
 
+const hasPassword = async () => {
+  if (process.env.APP_PASSWORD) {
+    return true;
+  }
+  const settings = await SettingsModel.findById(zeroObjectId);
+  if (!settings) {
+    throw new Error('Could not find settings document');
+  }
+  return Boolean(settings.adminPasswordHash);
+};
+
 const verifyPassword = async (password: string) => {
   const settings = await SettingsModel.findById(zeroObjectId);
   if (!settings) {
@@ -78,6 +89,17 @@ const verifyPassword = async (password: string) => {
 
 let lastLoginFail = new Date(0);
 const loginSafetyGapMs = 3000;
+
+apiAuthRouter.post('/try-passwordless-login', expressAsyncHandler(async (req, res) => {
+  if (await hasPassword()) {
+    res.json({ ok: false });
+    return;
+  }
+  res.json({
+    ok: true,
+    ...await createTokensPair(),
+  });
+}));
 
 apiAuthRouter.post('/login', expressAsyncHandler(async (req, res) => {
   if (typeof req.body?.password !== 'string') {

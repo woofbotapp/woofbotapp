@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import Button from '@mui/material/Button';
 import CssBaseline from '@mui/material/CssBaseline';
 import TextField from '@mui/material/TextField';
@@ -9,7 +9,7 @@ import { useQueryClient } from 'react-query';
 import { useNavigate } from 'react-router-dom';
 
 import {
-  api, AuthTokensResponse, HttpError, saveAuthTokens,
+  api, AuthTokensResponse, HttpError, PasswordlessLoginResponse, saveAuthTokens,
 } from '../../utils/api';
 import { apiRoutes, pageRoutes } from '../../routes';
 import { errorToast } from '../../utils/toast';
@@ -20,6 +20,26 @@ export default function Login() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [isFormDisabled, setIsFormDisabled] = useState(false);
+  const tryPasswordlessLogin = async () => {
+    try {
+      const response = await api.post<PasswordlessLoginResponse>(
+        apiRoutes.authTryPasswordlessLogin, {},
+      );
+      if (!response.ok) {
+        return;
+      }
+      saveAuthTokens(response);
+      queryClient.invalidateQueries();
+      navigate(pageRoutes.home, { replace: true });
+    } catch (error) {
+      errorToast(
+        ((error instanceof HttpError) && error.message) || 'Internal error',
+      );
+    }
+  };
+  useEffect(() => {
+    tryPasswordlessLogin();
+  }, [tryPasswordlessLogin]);
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const data = new FormData(event.currentTarget);

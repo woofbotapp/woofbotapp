@@ -1,5 +1,6 @@
 export const apiRoutes = {
   authLogin: '/api/auth/login',
+  authTryPasswordlessLogin: '/api/auth/try-passwordless-login',
   authLogout: '/api/auth/logout',
   authChangePassword: '/api/auth/change-password',
   authRefreshToken: '/api/auth/refresh-token',

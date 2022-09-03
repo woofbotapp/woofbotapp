@@ -1377,10 +1377,7 @@ export class TelegrafManager {
     ctx.replyWithMarkdownV2(escapeMarkdown(
       'Stopped watching price changes.',
     ));
-    if (
-      user.watchPriceChange
-      && !await UsersModel.findOne({ watchPriceChange: user.watchPriceChange })
-    ) {
+    if (user.watchPriceChange) {
       priceWatcher.unwatchPriceChange(user._id.toString());
     }
   }

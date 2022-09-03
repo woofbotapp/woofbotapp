@@ -49,6 +49,9 @@ class PriceWatcher extends EventEmitter {
     const fetchResult = await fetch(
       'https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd',
     );
+    if (!fetchResult.ok) {
+      throw new Error('Bad response from CoinGecko server');
+    }
     const jsonResult: CoingeckoPriceApiJson = await fetchResult.json();
     const price = jsonResult?.bitcoin?.usd;
     if (typeof price !== 'number') {

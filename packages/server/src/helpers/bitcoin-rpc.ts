@@ -185,6 +185,9 @@ async function rpc<T>(properties: RpcProperties): Promise<T> {
       }),
     },
   );
+  if (!response.ok) {
+    throw new Error('Bitcoin rpc response not ok');
+  }
   const responseJson = (await response.json()) as BitcoinRpcResponse<T>;
   if (responseJson.id !== rpcId) {
     throw new Error('Unexpected bitcoin rpc response id');
@@ -211,6 +214,9 @@ async function rpcBatch<T>(propertiesArray: RpcProperties[]): Promise<(BitcoinRp
       ),
     },
   );
+  if (!response.ok) {
+    throw new Error('Bitcoin rpc response not ok');
+  }
   const responseJson = (await response.json()) as BitcoinRpcResponse<T>[];
   if (responseJson.some(({ id }, index) => `${rpcId}:${index}` !== id)) {
     throw new Error('Unexpected bitcoin rpc response id');

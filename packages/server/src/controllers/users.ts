@@ -1,4 +1,5 @@
 import { FilterQuery } from 'mongoose';
+import { priceWatcher } from '../helpers/price-watcher';
 import { UserDocument, UsersModel } from '../models/users';
 import { WatchedAddressesModel } from '../models/watched-addresses';
 import { WatchedTransactionsModel } from '../models/watched-transactions';
@@ -33,6 +34,9 @@ export async function deleteUser(
     await unwatchUnusedAddresses(
       addresses.map(({ address }) => address),
     );
+  }
+  if (user.watchPriceChange) {
+    priceWatcher.unwatchPriceChange(user._id.toString());
   }
   return user;
 }

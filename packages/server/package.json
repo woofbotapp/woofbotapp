@@ -18,6 +18,7 @@
   },
   "dependencies": {
     "@woofbot/common": "^0.1.0",
+    "abort-controller": "^3.0.0",
     "bitcoin-address-validation": "^2.2.1",
     "bitcoinjs-lib": "^6.0.1",
     "express": "^4.17.1",

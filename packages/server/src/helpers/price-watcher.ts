@@ -66,7 +66,7 @@ class PriceWatcher extends EventEmitter {
       throw new Error('Could not parse price');
     }
     logger.info(`getPrice: Bitcoin price is $${price}`);
-    return price;
+    return Math.round(price);
   }
 
   private static calculateThresholds(price: number, delta: number): [number, number] {

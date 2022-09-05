@@ -171,7 +171,7 @@ export class TelegrafManager {
       const isIncrease = (oldMin < newMin);
       const message = escapeMarkdown(
         `${isIncrease ? '📈' : '📉'} Woof! The price of Bitcoin on CoinGecko is $${
-          event.newPrice.toFixed(2)
+          event.newPrice.toLocaleString('en-US')
         }. I will check the price every minute and let you know when the price goes below $${
           newMin
         } or above $${newMax}.`,
@@ -1347,10 +1347,13 @@ export class TelegrafManager {
     const result = await priceWatcher.watchPriceChange(user._id.toString(), delta);
     if (result) {
       const [lastPrice, minPrice, maxPrice] = result;
-      ctx.replyWithMarkdownV2(escapeMarkdown([
-        `The current price on CoinGecko is $${lastPrice.toFixed(2)}. I will check the price every`,
-        `minute and let you know when the price goes below $${minPrice} or above $${maxPrice}.`,
-      ].join(' ')));
+      ctx.replyWithMarkdownV2(escapeMarkdown(
+        `The current price on CoinGecko is $${
+          lastPrice.toLocaleString('en-US')
+        }. I will check the price every minute and let you know when the price goes below $${
+          minPrice
+        } or above $${maxPrice}.`,
+      ));
     } else {
       ctx.replyWithMarkdownV2(escapeMarkdown([
         'Price watch has been set, but there seems to be a problem fetching the price from',

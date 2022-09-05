@@ -7,6 +7,7 @@
 **/dist
 **/dev-*
 **/.env.dev-docker
+**/Dockerfile-server-dev
 **/.git
 **/.vscode
 **/.DS_Store

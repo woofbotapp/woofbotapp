@@ -8,21 +8,24 @@
     "packages/*"
   ],
   "devDependencies": {
-    "lerna": "^4.0.0"
+    "lerna": "^4.0.0",
+    "npm-run-all": "^4.1.5"
   },
   "scripts": {
     "docker:stop-container": "wrap () { if [ -n \"$(docker ps -a -q -f name=$1)\" ]; then docker stop $1 ; fi }; wrap",
-    "docker:stop-all-containers": "yarn docker:stop-container woofbot-dev-mongodb-container && yarn docker:stop-container woofbot-container",
-    "dev:mongodb": "mkdir -p dev-mongodb-data && yarn docker:stop-container woofbot-dev-mongodb-container && docker run --rm -p 27017:27017 -v $PWD/dev-mongodb-data:/data/db --name woofbot-dev-mongodb-container mongo:4.4.6-bionic",
+    "docker:stop-all-containers": "yarn docker:stop-container woofbot-mongodb-dev-container && yarn docker:stop-container woofbot-container && yarn docker:stop-container woofbot-server-dev-container",
+    "docker:clean": "yarn docker:stop-container woofbot-container && yarn docker:stop-container woofbot-server-dev-container && for IMAGE_ID in $(docker images -q 'woofbot/*'); do docker image rm $IMAGE_ID; done",
+    "docker:build-server-dev": "docker buildx build -f Dockerfile-server-dev --platform linux/amd64 --progress plain --tag woofbot/woofbot-server-dev . --load",
+    "docker:build-to-registry": "docker buildx build --platform linux/arm64,linux/amd64 --progress plain --tag woofbot/woofbot:v$(node -p \"require('./package.json').version\") . --output type=registry",
+    "dev:mongodb": "mkdir -p dev-mongodb-data && yarn docker:stop-container woofbot-mongodb-dev-container && docker run --rm --sig-proxy=true -p 27017:27017 -v $PWD/dev-mongodb-data:/data/db --name woofbot-mongodb-dev-container mongo:4.4.6-bionic",
     "dev:bitcoind:fill-conf": "if [ ! -f 'dev-bitcoind-data/.bitcoin/bitcoin.conf' ]; then mkdir -p dev-bitcoind-data/.bitcoin dev-bitcoind-data/data1 dev-bitcoind-data/data2 && cp dev-bitcoin.conf dev-bitcoind-data/.bitcoin/bitcoin.conf && cp dev-bitcoin2.conf dev-bitcoind-data/data2/bitcoin.conf; fi",
-    "dev:bitcoind": "yarn dev:bitcoind:fill-conf && yarn docker:stop-container bitcoind-node && docker run --rm -p 29000:29000 -p 18444:18444 -v $PWD/dev-bitcoind-data:/bitcoin -v $PWD/dev-test-scenarios:/test-scenarios --name bitcoind-node bitcoindevelopernetwork/bitcoind-regtest",
-    "docker:clean": "yarn docker:stop-container woofbot-container && if [ -n \"$(docker images -q 'woofbot/*')\" ]; then docker image rm woofbot/*; fi",
-    "docker:build": "docker buildx build --platform linux/arm64,linux/amd64 --progress plain --tag woofbot/woofbot:v$(node -p \"require('./package.json').version\") .",
-    "docker:build-to-registry": "yarn docker:build --output type=registry",
+    "dev:bitcoind": "yarn dev:bitcoind:fill-conf && yarn docker:stop-container bitcoind-node && docker run --rm --sig-proxy=true -p 29000:29000 -p 18444:18444 -v $PWD/dev-bitcoind-data:/bitcoin -v $PWD/dev-test-scenarios:/test-scenarios --name bitcoind-node bitcoindevelopernetwork/bitcoind-regtest",
+    "dev:client": "yarn client dev",
+    "dev:server": "if [ -z \"$(docker images -q 'woofbot/woofbot-server-dev')\" ]; then echo 'Server dev image not found, must run first: yarn docker:build-server-dev'; exit 1; fi; yarn docker:stop-container woofbot-server-dev && docker run --rm -i -t -p 8080:8080 -v $PWD/packages/server/src:/app/packages/server/src --env-file .env.dev-docker --name woofbot-server-dev-container woofbot/woofbot-server-dev",
+    "dev": "yarn common lint && yarn common build && yarn client lint && yarn server lint && yarn docker:build-server-dev && npm-run-all -p dev:mongodb dev:bitcoind dev:client dev:server",
     "client": "yarn workspace @woofbot/client",
     "common": "yarn workspace @woofbot/common",
     "server": "yarn workspace @woofbot/server",
-    "dev": "yarn common lint && yarn common build && yarn client lint && yarn server lint && (yarn dev:mongodb & yarn dev:bitcoind & yarn client dev & yarn server dev --verbose)",
     "start": "yarn server start",
     "lint": "yarn common lint && yarn client lint && yarn server lint",
     "clean": "yarn common clean && yarn client clean && yarn server clean",

@@ -1,0 +1,31 @@
+FROM node:16.15.0-bullseye-slim as builder
+
+WORKDIR /app
+# For node-gyp
+RUN apt-get update && apt-get install -y make gcc g++ python3 libzmq3-dev
+# Copy build files
+COPY package.json tsconfig.base.json yarn.lock ./
+# Copy package.json & tsconfig.json of each workspace
+ARG PACKAGE="common"
+COPY "packages/${PACKAGE}/*.json" "./packages/${PACKAGE}/"
+ARG PACKAGE="server"
+COPY "packages/${PACKAGE}/*.json" "./packages/${PACKAGE}/"
+RUN yarn install --frozen-lockfile --network-timeout 600000
+RUN mkdir -p ./node_modules ./packages/common/node_modules ./packages/server/node_modules
+
+ARG PACKAGE="common"
+COPY "packages/${PACKAGE}/." "./packages/${PACKAGE}/"
+RUN yarn common build
+
+# src path will be mounted locally:
+ARG PACKAGE="server"
+COPY "packages/${PACKAGE}/[^src]*" "./packages/${PACKAGE}/"
+
+FROM node:16.15.0-bullseye-slim
+
+WORKDIR /app
+
+COPY --from=builder --chown=node:node /app ./
+USER node
+# Start server
+CMD ["yarn", "server", "dev", "--verbose"]

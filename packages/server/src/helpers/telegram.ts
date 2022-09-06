@@ -173,8 +173,8 @@ export class TelegrafManager {
         `${isIncrease ? '📈' : '📉'} Woof! The price of Bitcoin on CoinGecko is $${
           event.newPrice.toLocaleString('en-US')
         }. I will check the price every minute and let you know when the price goes below $${
-          newMin
-        } or above $${newMax}.`,
+          newMin.toLocaleString('en-US')
+        } or above $${newMax.toLocaleString('en-US')}.`,
       );
       await this.sendMessage({
         chatId: user.telegramChatId,
@@ -1329,9 +1329,12 @@ export class TelegrafManager {
       ].join('\n')));
       return;
     }
-    const delta = Number(args[0]);
+    const delta = Number(args[0].replaceAll(',', ''));
     if ((delta <= 0) || !Number.isSafeInteger(delta)) {
-      ctx.replyWithMarkdownV2(escapeMarkdown('Invalid value, must be a positive integer.'));
+      ctx.replyWithMarkdownV2(escapeMarkdown([
+        'Invalid value, must be a positive integer.',
+        'Try using only digits, and avoid commas and other symbols.',
+      ].join(' ')));
       return;
     }
     await UsersModel.updateOne(
@@ -1351,8 +1354,8 @@ export class TelegrafManager {
         `The current price on CoinGecko is $${
           lastPrice.toLocaleString('en-US')
         }. I will check the price every minute and let you know when the price goes below $${
-          minPrice
-        } or above $${maxPrice}.`,
+          minPrice.toLocaleString('en-US')
+        } or above $${maxPrice.toLocaleString('en-US')}.`,
       ));
     } else {
       ctx.replyWithMarkdownV2(escapeMarkdown([
@@ -1436,7 +1439,9 @@ export class TelegrafManager {
       lines.push(escapeMarkdown('You are watching new blocks.'));
     }
     if (user.watchPriceChange) {
-      lines.push(escapeMarkdown(`You are watching price changes of $${user.watchPriceChange}.`));
+      lines.push(escapeMarkdown(`You are watching price changes of $${
+        user.watchPriceChange.toLocaleString('en-US')
+      }.`));
     }
     const watchedTransactions = await WatchedTransactionsModel.find({
       userId: user._id,

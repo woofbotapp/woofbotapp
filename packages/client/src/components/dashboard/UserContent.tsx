@@ -289,7 +289,7 @@ function UserContentByUserId({
                     {
                       (data.data.attributes.watchPriceChange === undefined)
                         ? 'Off'
-                        : `Every $${data.data.attributes.watchPriceChange}`
+                        : `Every $${data.data.attributes.watchPriceChange.toLocaleString('en-US')}`
                     }
                   </Typography>
                 </Paper>

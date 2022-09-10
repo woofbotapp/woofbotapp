@@ -31,14 +31,11 @@ const promisifiedScrypt = (
 });
 
 const hasPassword = async () => {
-  if (process.env.APP_PASSWORD) {
-    return true;
-  }
   const settings = await SettingsModel.findById(zeroObjectId);
   if (!settings) {
     throw new Error('Could not find settings document');
   }
-  return Boolean(settings.adminPasswordHash);
+  return Boolean(settings.adminPasswordHash ?? process.env.APP_PASSWORD);
 };
 
 const verifyPassword = async (password: string) => {
@@ -46,13 +43,16 @@ const verifyPassword = async (password: string) => {
   if (!settings) {
     throw new Error('Could not find settings document');
   }
-  if (!settings.adminPasswordHash) {
+  if (settings.adminPasswordHash === undefined) {
     const currentPassword = Buffer.from(process.env.APP_PASSWORD ?? '');
     const givenPassword = Buffer.from(password);
     return (
       (currentPassword.byteLength === givenPassword.byteLength)
       && timingSafeEqual(currentPassword, givenPassword)
     );
+  }
+  if (settings.adminPasswordHash === '') {
+    return password === '';
   }
   if (settings.adminPasswordHash.startsWith('scrypt$')) {
     const [
@@ -145,6 +145,32 @@ apiAuthRouter.post('/refresh-token', expressAsyncHandler(async (req, res) => {
   res.json(await createTokensPair());
 }));
 
+async function generatePasswordHash(password: string): Promise<string> {
+  if (!password) {
+    return '';
+  }
+  const salt = randomBytes(32).toString('base64').slice(0, -1);
+  const derivedKey = await promisifiedScrypt(
+    password,
+    salt,
+    scryptDefaultKeyLen,
+    {
+      cost: scryptDefaultCost,
+      blockSize: scryptDefaultBlockSize,
+      parallelization: scryptDefaultParallelization,
+      maxmem: 256 * scryptDefaultCost * scryptDefaultBlockSize,
+    },
+  );
+  return [
+    'scrypt',
+    scryptDefaultCost,
+    scryptDefaultBlockSize,
+    scryptDefaultParallelization,
+    salt,
+    derivedKey.toString('base64'),
+  ].join('$');
+}
+
 apiAuthRouter.post('/change-password', expressAsyncHandler(async (req, res) => {
   if (
     (typeof req.body?.oldPassword !== 'string')
@@ -169,31 +195,12 @@ apiAuthRouter.post('/change-password', expressAsyncHandler(async (req, res) => {
     });
     return;
   }
-  const salt = randomBytes(32).toString('base64').slice(0, -1);
-  const derivedKey = await promisifiedScrypt(
-    req.body.newPassword,
-    salt,
-    scryptDefaultKeyLen,
-    {
-      cost: scryptDefaultCost,
-      blockSize: scryptDefaultBlockSize,
-      parallelization: scryptDefaultParallelization,
-      maxmem: 256 * scryptDefaultCost * scryptDefaultBlockSize,
-    },
-  );
   // ignored race condition of two /change-password calls at the same time.
   await SettingsModel.updateOne({
     _id: zeroObjectId,
   }, {
     $set: {
-      adminPasswordHash: [
-        'scrypt',
-        scryptDefaultCost,
-        scryptDefaultBlockSize,
-        scryptDefaultParallelization,
-        salt,
-        derivedKey.toString('base64'),
-      ].join('$'),
+      adminPasswordHash: await generatePasswordHash(req.body.newPassword),
     },
   });
   // Force logout all sessions

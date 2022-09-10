@@ -29,8 +29,16 @@ export function saveAuthTokens({
   window.sessionStorage.setItem('authTokenExpiresAt', authTokenExpiresAt.toJSON());
 }
 
+export function saveIsPasswordlessLogin(value: boolean): void {
+  window.sessionStorage.setItem('isPasswordlessLogin', value ? 'true' : 'false');
+}
+
+export function getIsPasswordlessLogin(): boolean {
+  return window.sessionStorage.getItem('isPasswordlessLogin') === 'true';
+}
+
 export function deleteAuthTokens() {
-  for (const item of ['authToken', 'authTokenExpiresAt', 'refreshToken']) {
+  for (const item of ['authToken', 'authTokenExpiresAt', 'refreshToken', 'isPasswordlessLogin']) {
     window.sessionStorage.removeItem(item);
   }
 }

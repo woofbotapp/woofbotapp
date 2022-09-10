@@ -11,6 +11,7 @@ import { useNavigate } from 'react-router-dom';
 
 import {
   api, AuthTokensResponse, HttpError, PasswordlessLoginResponse, saveAuthTokens,
+  saveIsPasswordlessLogin,
 } from '../../utils/api';
 import { apiRoutes, pageRoutes } from '../../routes';
 import { errorToast } from '../../utils/toast';
@@ -34,6 +35,7 @@ export default function Login() {
         return;
       }
       setShowPasswordForm(false);
+      saveIsPasswordlessLogin(true);
       saveAuthTokens(response);
       queryClient.invalidateQueries();
       navigate(pageRoutes.home, { replace: true });
@@ -55,6 +57,7 @@ export default function Login() {
       const response = await api.post<AuthTokensResponse>(apiRoutes.authLogin, {
         password: data.get('password'),
       });
+      saveIsPasswordlessLogin(false);
       saveAuthTokens(response);
       queryClient.invalidateQueries();
       navigate(pageRoutes.home, { replace: true });

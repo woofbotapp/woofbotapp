@@ -1,4 +1,4 @@
-import React, { useState, MouseEvent } from 'react';
+import React, { useState, MouseEvent, useEffect } from 'react';
 import { styled } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import MuiDrawer from '@mui/material/Drawer';
@@ -21,7 +21,7 @@ import Avatar from '@mui/material/Avatar';
 import { mainListItems } from './listItems';
 import { pageRoutes } from '../../routes';
 import { useGetPing } from '../../api/ping';
-import { isAuthError } from '../../utils/api';
+import { isAuthError, getIsPasswordlessLogin } from '../../utils/api';
 import { ReactComponent as Logo } from '../../assets/images/logo.svg';
 
 const drawerWidth: number = 240;
@@ -76,6 +76,7 @@ const Drawer = styled(MuiDrawer, { shouldForwardProp: (prop) => prop !== 'open' 
 
 export default function Dashboard() {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [isPasswordlessLogin, setIsPasswordlessLogin] = useState(true);
   const toggleDrawer = () => {
     setIsDrawerOpen(!isDrawerOpen);
   };
@@ -90,6 +91,10 @@ export default function Dashboard() {
   };
 
   const ping = useGetPing();
+
+  useEffect(() => {
+    setIsPasswordlessLogin(getIsPasswordlessLogin());
+  }, []);
 
   if (ping.isLoading || isAuthError(ping.error)) {
     return (
@@ -157,8 +162,14 @@ export default function Dashboard() {
               'aria-labelledby': 'basic-button',
             }}
           >
-            <MenuItem component={Link} to={pageRoutes.logout}>Logout</MenuItem>
-            <MenuItem component={Link} to={pageRoutes.changePassword}>Change Password</MenuItem>
+            {
+              !isPasswordlessLogin && (
+                <MenuItem component={Link} to={pageRoutes.logout}>Logout</MenuItem>
+              )
+            }
+            <MenuItem component={Link} to={pageRoutes.changePassword}>
+              Change Password
+            </MenuItem>
           </Menu>
         </Toolbar>
       </AppBar>

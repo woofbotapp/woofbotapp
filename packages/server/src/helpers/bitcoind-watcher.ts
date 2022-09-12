@@ -22,6 +22,7 @@ export enum BitcoindWatcherEventName {
   NewBlockAnalyzed = 'newBlockAnalyzed',
   NewAddressPayment = 'newAddressPayment',
   AddressOverload = 'addressOverload',
+  NewMempoolClearStatus = 'newMempoolClearStatus',
 }
 
 export interface TransactionAnalysis {
@@ -99,7 +100,7 @@ function txInStandardKey(parameters: Pick<TxInStandard, 'txid' | 'vout'>): strin
 }
 
 class BitcoindWatcher extends EventEmitter {
-  private recheckMempoolTransactions: string[] = [];
+  private recheckMempoolTransactions: string[] | undefined;
 
   // Analyses is the plural of analysis
   private transactionAnalyses: Map<string, TransactionAnalysis> = new Map();
@@ -119,6 +120,11 @@ class BitcoindWatcher extends EventEmitter {
   private checkNewBlock = true;
 
   private checkMempool = true;
+
+  // Full check of mempool conflicts and incomes (of watched transactions and addresses) is only
+  // relevant after boot. After that, we check each transaction when it arrives on the sequence
+  // socket.
+  private checkMempoolConflictsAndIncomes = true;
 
   // maps address -> income-txid
   private watchedAddresses: Map<string, Set<string>> = new Map();
@@ -266,6 +272,7 @@ class BitcoindWatcher extends EventEmitter {
             throw new Error('Best block hash not found');
           }
           if (!this.analyzedBlockHashes.includes(bestBlockHash)) {
+            this.checkMempool = true;
             const analysisComplete = await this.analyzeNewBlocks(bestBlockHash);
             if (!analysisComplete) {
               this.checkNewBlock = true;
@@ -275,6 +282,35 @@ class BitcoindWatcher extends EventEmitter {
           this.checkNewBlock = true;
           throw error;
         }
+      } else if (this.recheckMempoolTransactions) {
+        // Do not re-trigger immediately. Give some runtime to other parts of the app.
+        setTimeout(
+          () => this.safeAsyncEmit(BitcoindWatcherEventName.Trigger),
+          recheckMempoolGraceMs,
+        );
+        const recheckTxids = this.recheckMempoolTransactions.slice(0, rawTransactionsBatchSize);
+        const leftTxids = this.recheckMempoolTransactions.slice(rawTransactionsBatchSize);
+        const recheckTransactions = await getRawTransactionsBatch(recheckTxids);
+        this.recheckMempoolTransactions = leftTxids;
+        if (this.checkMempoolConflictsAndIncomes) {
+          for (const recheckTransaction of recheckTransactions) {
+            this.checkTransactionConflicts(
+              recheckTransaction.txid,
+              recheckTransaction.vin
+                .filter((txIn) => txIn.txid)
+                .map((txIn) => txInStandardKey(txIn as TxInStandard)),
+            );
+            if (!recheckTransaction.confirmations) {
+              // report incomes for this mempool transactions
+              this.reportIncomes(recheckTransaction, 0);
+            }
+          }
+        }
+        if (this.recheckMempoolTransactions.length === 0) {
+          logger.info('runSafe: finished last mempool transaction to check for conflicts');
+          this.checkMempoolConflictsAndIncomes = false;
+          this.recheckMempoolTransactions = undefined;
+        }
       } else if (this.checkMempool) {
         this.shouldRerun = true;
         this.checkMempool = false;
@@ -282,41 +318,12 @@ class BitcoindWatcher extends EventEmitter {
           const mempoolTransactions = await getRawMempool();
           if (mempoolTransactions) {
             logger.info(`mempoolTransactions: ${mempoolTransactions.length}`);
-            const mempoolSet = new Set(this.recheckMempoolTransactions);
-            this.recheckMempoolTransactions.push(
-              ...mempoolTransactions.filter((t) => !mempoolSet.has(t)),
-            );
+            this.recheckMempoolTransactions = mempoolTransactions;
             this.shouldRerun = true;
           }
         } catch (error) {
           this.checkMempool = true;
           throw error;
-        }
-      } else if (this.recheckMempoolTransactions.length > 0) {
-        // Do not re-trigger immediately. Give some runtime to other parts of the app.
-        setTimeout(
-          () => this.safeAsyncEmit(BitcoindWatcherEventName.Trigger),
-          recheckMempoolGraceMs,
-        );
-        const recheckTxids = this.recheckMempoolTransactions.slice(0, rawTransactionsBatchSize);
-        const recheckTransactions = await getRawTransactionsBatch(recheckTxids);
-        this.recheckMempoolTransactions = this.recheckMempoolTransactions.slice(
-          rawTransactionsBatchSize,
-        );
-        if (this.recheckMempoolTransactions.length === 0) {
-          logger.info('runSafe: last mempool transaction to check for conflicts');
-        }
-        for (const recheckTransaction of recheckTransactions) {
-          this.checkTransactionConflicts(
-            recheckTransaction.txid,
-            recheckTransaction.vin
-              .filter((txIn) => txIn.txid)
-              .map((txIn) => txInStandardKey(txIn as TxInStandard)),
-          );
-          if (!recheckTransaction.confirmations) {
-            // report incomes for this mempool transactions
-            this.reportIncomes(recheckTransaction, 0);
-          }
         }
       }
     } catch (error) {
@@ -959,7 +966,7 @@ class BitcoindWatcher extends EventEmitter {
     return (
       this.newTransactionsToWatch.length + this.transactionsToUnwatch.length
       + this.transactionsToReanalyze.length + (this.transactionPayloadsQueue?.length ?? 0)
-      + this.recheckMempoolTransactions.length + (this.checkNewBlock ? 1 : 0)
+      + (this.recheckMempoolTransactions?.length ?? 0) + (this.checkNewBlock ? 1 : 0)
       + (this.checkMempool ? 1 : 0)
     );
   }

@@ -1,5 +1,7 @@
 export const AppName = 'WoofBot';
 
+export const AppVersion = '%VERSION%'; // will be replaced by post-build script
+
 export enum TelegramStatus {
   Unset = 'unset',
   Loading = 'loading',

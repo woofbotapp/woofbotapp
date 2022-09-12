@@ -73,6 +73,7 @@ export interface BlockTransaction {
   version: number;
   size: number;
   vsize: number;
+  weight: number;
   locktime: number;
   vin: TxIn[];
   vout: TxOut[];

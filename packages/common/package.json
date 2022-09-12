@@ -15,7 +15,8 @@
   "scripts": {
     "tsc": "tsc --build",
     "clean": "rimraf build tsconfig.tsbuildinfo",
-    "build": "yarn clean && yarn tsc",
+    "build": "yarn clean && yarn tsc && yarn postbuild:autoreplace",
+    "postbuild:autoreplace": "node ./scripts/postbuild-autoreplace.js",
     "lint": "eslint . --ext .ts",
     "lint:fix": "eslint . --fix --ext .ts"
   }

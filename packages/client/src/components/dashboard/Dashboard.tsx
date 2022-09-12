@@ -17,6 +17,7 @@ import { Link, Outlet } from 'react-router-dom';
 import Menu from '@mui/material/Menu';
 import MenuItem from '@mui/material/MenuItem';
 import Avatar from '@mui/material/Avatar';
+import { AppVersion } from '@woofbot/common';
 
 import { mainListItems } from './listItems';
 import { pageRoutes } from '../../routes';
@@ -139,7 +140,10 @@ export default function Dashboard() {
             noWrap
             sx={{ flexGrow: 1 }}
           >
-            WoofBot Dashboard - v0.2.0 (beta)
+            WoofBot Dashboard - v
+            {AppVersion}
+            {' '}
+            (beta)
           </Typography>
           <IconButton
             color="inherit"

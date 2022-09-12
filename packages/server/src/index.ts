@@ -18,6 +18,7 @@ import { bitcoindWatcher, TransactionAnalysis } from './helpers/bitcoind-watcher
 import { WatchedTransactionsModel } from './models/watched-transactions';
 import { WatchedAddressesModel } from './models/watched-addresses';
 import { priceWatcher } from './helpers/price-watcher';
+import { migrate } from './migration';
 
 declare global {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -101,6 +102,7 @@ app.use((err, _req, res, _next) => {
   }, {
     upsert: true,
   });
+  await migrate();
   const settings = await SettingsModel.findById(zeroObjectId);
   if (!settings) {
     throw new Error('Could not load settings');

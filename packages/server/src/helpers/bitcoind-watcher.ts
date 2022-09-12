@@ -1000,6 +1000,10 @@ class BitcoindWatcher extends EventEmitter {
       + (this.checkMempool ? 1 : 0)
     );
   }
+
+  getMempoolWeight(): number {
+    return this.mempoolWeight ?? 0;
+  }
 }
 
 export const bitcoindWatcher = new BitcoindWatcher();

@@ -48,6 +48,7 @@ export interface GeneralSettingsInterface {
   bestBlockHeight: number;
   bestBlockId: string;
   bitcoindWatcherTasks: number;
+  mempoolWeight: number;
 }
 
 export const useGetSettingsGeneral = () => useAuthQuery<GeneralSettingsInterface>(

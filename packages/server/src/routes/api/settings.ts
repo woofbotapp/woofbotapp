@@ -20,6 +20,7 @@ apiSettingsRouter.get('/general', expressAsyncHandler(async (req, res) => {
     bestBlockHeight: settings.bestBlockHeight,
     bestBlockId: settings.analyzedBlockHashes.slice(-1)[0] ?? '',
     bitcoindWatcherTasks: bitcoindWatcher.countTasks(),
+    mempoolWeight: bitcoindWatcher.getMempoolWeight(),
   });
 }));
 

@@ -61,6 +61,11 @@ export default function GeneralSettings() {
             {data.bestBlockHeight}
           </ExternalLink>
         </Typography>
+        <Typography component="p">
+          Mempool weight:
+          {' '}
+          {data.mempoolWeight}
+        </Typography>
         <Typography component="p" sx={{ flex: 1 }}>
           Bitcoind-Watcher Queued Tasks:
           {' '}

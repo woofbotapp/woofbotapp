@@ -21,7 +21,7 @@ const schema = new Schema<SettingsFields & TimeFields>({
 }, { timestamps: true });
 
 export const defaultSettings: SettingsFields = {
-  migrationVersion: 0,
+  migrationVersion: 1,
   maxUsers: 10,
   bestBlockHeight: 0,
   analyzedBlockHashes: [],

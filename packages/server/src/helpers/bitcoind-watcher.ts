@@ -64,7 +64,7 @@ const networks = {
 const rawTransactionsBatchSize = 50;
 const maxAnalyzedBlocks = 5;
 const bitcoindWatcherErrorGraceMs = 10_000;
-const bestBlockCheckIntervalMs = 15_000;
+const majorRecheckIntervalMs = 60_000;
 const recheckMempoolGraceMs = 10;
 
 const startAttempts = 6;
@@ -134,6 +134,8 @@ class BitcoindWatcher extends EventEmitter {
   private isRunning = false;
 
   private chain: Network | undefined;
+
+  private majorRecheckLastBestBlockHash: string | undefined;
 
   constructor() {
     super();
@@ -808,6 +810,27 @@ class BitcoindWatcher extends EventEmitter {
     }
   }
 
+  private async majorRecheck(): Promise<void> {
+    try {
+      logger.info('majorRecheck: started');
+      if (!this.sequenceNotificationSocket) {
+        const newBestBlockHash = await getBestBlockHash();
+        if (this.majorRecheckLastBestBlockHash !== newBestBlockHash) {
+          if (this.majorRecheckLastBestBlockHash) {
+            logger.info('majorRecheck: New block from major recheck');
+            this.checkNewBlock = true;
+          }
+          this.majorRecheckLastBestBlockHash = newBestBlockHash;
+        }
+      }
+      this.checkMempool = true;
+      this.safeAsyncEmit(BitcoindWatcherEventName.Trigger);
+      logger.info('majorRecheck: finished');
+    } catch (error) {
+      logger.error(`BitcoindWatcher: Failed to run major recheck ${errorString(error)}`);
+    }
+  }
+
   async start(
     analyzedBlockHashes: string[],
     watchedTransactions: [string, TransactionAnalysis][],
@@ -877,26 +900,10 @@ class BitcoindWatcher extends EventEmitter {
           this.safeAsyncEmit(BitcoindWatcherEventName.Trigger);
         }
       });
-    } else {
-      let bestBlockHash: string | undefined;
-      const blockCheckInterval = setInterval(async () => {
-        try {
-          const newBestBlockHash = await getBestBlockHash();
-          if (bestBlockHash === newBestBlockHash) {
-            return;
-          }
-          if (bestBlockHash) {
-            logger.info('BitcoindWatcher: New block from interval');
-            this.checkNewBlock = true;
-            this.safeAsyncEmit(BitcoindWatcherEventName.Trigger);
-          }
-          bestBlockHash = newBestBlockHash;
-        } catch (error) {
-          logger.error(`BitcoindWatcher: Failed to check best block hash ${errorString(error)}`);
-        }
-      }, bestBlockCheckIntervalMs);
-      blockCheckInterval.unref();
     }
+    const majorRecheckInterval = setInterval(() => this.majorRecheck(), majorRecheckIntervalMs);
+    majorRecheckInterval.unref();
+
     this.rawTransactionSocket = zeromq.socket('sub');
     this.rawTransactionSocket.connect(notificationAddresses.rawtx);
     this.rawTransactionSocket.subscribe('rawtx');

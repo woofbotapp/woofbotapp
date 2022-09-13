@@ -13,6 +13,7 @@ import { deleteUser } from '../controllers/users';
 import {
   bitcoindWatcher, BitcoindWatcherEventName, NewTransactionAnalysisEvent, TransactionAnalysis,
   transactionAnalysisToString, NewAddressPaymentEvent, NewBlockAnalyzedEvent,
+  NewMempoolClearStatusEvent,
 } from './bitcoind-watcher';
 import { errorString } from './error';
 import logger from './logger';
@@ -94,6 +95,10 @@ export class TelegrafManager {
     bitcoindWatcher.on(
       BitcoindWatcherEventName.NewBlockAnalyzed,
       (event) => this.onNewBlockAnalyzed(event),
+    );
+    bitcoindWatcher.on(
+      BitcoindWatcherEventName.NewMempoolClearStatus,
+      (event) => this.onNewMempoolClearStatus(event),
     );
     priceWatcher.on(
       PriceWatcherEventName.ConsecutiveApiErrors,
@@ -387,6 +392,36 @@ export class TelegrafManager {
     } catch (error) {
       logger.error(
         `TelegrafManager: Failed to handle address overload: ${errorString(error)}`,
+      );
+    }
+  }
+
+  private async onNewMempoolClearStatus(parameters: NewMempoolClearStatusEvent) {
+    try {
+      logger.info(`onNewMempoolClearStatus: isClear ${parameters.isClear}`);
+      const watchMempoolClearUsers = await UsersModel.find({
+        watchMempoolClear: true,
+      });
+      const message = escapeMarkdown(
+        parameters.isClear
+          ? [
+            '🌚 Woof! The mempool is clear and all of its transactions could fit in a the next',
+            'block. Now is a good time to publish low-fee transactions.',
+          ].join(' ')
+          : [
+            '🌝 Woof! The mempool is no longer clear and more than one block is needed to confirm',
+            'all of its transactions.',
+          ].join(' '),
+      );
+      for await (const user of watchMempoolClearUsers) {
+        await this.sendMessage({
+          chatId: user.telegramChatId,
+          text: message,
+        });
+      }
+    } catch (error) {
+      logger.error(
+        `TelegrafManager: Failed to handle mempool clear status: ${errorString(error)}`,
       );
     }
   }
@@ -1390,6 +1425,49 @@ export class TelegrafManager {
     return TelegrafManager[BotCommandName.UnwatchPriceChange](ctx, user);
   }
 
+  static async [BotCommandName.WatchMempoolClear](ctx: TextContext, user: UserDocument) {
+    await UsersModel.updateOne(
+      {
+        _id: user._id,
+      },
+      {
+        $set: {
+          watchMempoolClear: true,
+        },
+      },
+    );
+    // Side effect: if the mempool size was not calculated yet, assuming that it is not clear.
+    const isMempoolClear = bitcoindWatcher.isMempoolClear() ?? false;
+
+    ctx.replyWithMarkdownV2(escapeMarkdown(
+      isMempoolClear
+        ? [
+          'The mempool is clear. I will let you know when the mempool transactions will no',
+          'longer fit in a single block (no room for low-fee transactions).',
+        ].join(' ')
+        : [
+          'The mempool is not clear. I will let you know when the mempool transactions could fit',
+          'in a single block and there is room for low-fee transactions.',
+        ].join(' '),
+    ));
+  }
+
+  static async [BotCommandName.UnwatchMempoolClear](ctx: TextContext, user: UserDocument) {
+    await UsersModel.updateOne(
+      {
+        _id: user._id,
+      },
+      {
+        $unset: {
+          watchMempoolClear: false,
+        },
+      },
+    );
+    ctx.replyWithMarkdownV2(escapeMarkdown(
+      'Stopped watching mempool clearance.',
+    ));
+  }
+
   static async [BotCommandName.MempoolLinks](ctx: TextContext) {
     const replyToMessage = ctx.message.reply_to_message;
     if (!replyToMessage) {
@@ -1440,6 +1518,9 @@ export class TelegrafManager {
       lines.push(escapeMarkdown(`You are watching price changes of $${
         user.watchPriceChange.toLocaleString('en-US')
       }.`));
+    }
+    if (user.watchMempoolClear) {
+      lines.push(escapeMarkdown('You are watching mempool becoming clear.'));
     }
     const watchedTransactions = await WatchedTransactionsModel.find({
       userId: user._id,

@@ -13,6 +13,7 @@ interface UserAttributes {
   watchReboot: boolean;
   watchNewBlocks: boolean;
   watchPriceChange?: number;
+  watchMempoolClear: boolean;
   createdAt: string;
   updatedAt: string;
 }

@@ -1,4 +1,3 @@
-import querystring from 'querystring';
 import expressAsyncHandler from 'express-async-handler';
 import Router from 'express';
 import { Types } from 'mongoose';
@@ -79,8 +78,8 @@ apiUsersRouter.get('/', expressAsyncHandler(async (req, res) => {
         next: `${
           req.originalUrl.split('?')[0]
         }?${
-          querystring.stringify({
-            'page[size]': pageSize,
+          new URLSearchParams({
+            'page[size]': `${pageSize}`,
             'page[cursor]': `${nextUser.createdAt.getTime()}.${nextUser.id}`,
           })
         }`,

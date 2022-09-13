@@ -12,6 +12,18 @@ import telegramManager, { escapeMarkdown } from '../../helpers/telegram';
 
 const maxLimit = 200;
 
+const listAttributes = [
+  'telegramFromId',
+  'telegramUsername',
+  'telegramChatId',
+  'watchReboot',
+  'watchNewBlocks',
+  'watchPriceChange',
+  'watchMempoolClear',
+  'updatedAt',
+  'createdAt',
+];
+
 const apiUsersRouter = Router();
 
 apiUsersRouter.get('/', expressAsyncHandler(async (req, res) => {
@@ -89,16 +101,7 @@ apiUsersRouter.get('/', expressAsyncHandler(async (req, res) => {
       type: 'users',
       id: userDoc.id,
       attributes: Object.fromEntries(
-        [
-          'telegramFromId',
-          'telegramUsername',
-          'telegramChatId',
-          'watchReboot',
-          'watchNewBlocks',
-          'watchPriceChange',
-          'updatedAt',
-          'createdAt',
-        ].map((key) => [key, userDoc[key]]),
+        listAttributes.map((key) => [key, userDoc[key]]),
       ),
     })),
   });
@@ -146,16 +149,7 @@ apiUsersRouter.get('/:userId([0-9a-f]{24})', expressAsyncHandler(async (req, res
       type: 'users',
       id: user.id,
       attributes: Object.fromEntries(
-        [
-          'telegramFromId',
-          'telegramUsername',
-          'telegramChatId',
-          'watchReboot',
-          'watchNewBlocks',
-          'watchPriceChange',
-          'updatedAt',
-          'createdAt',
-        ].map((key) => [key, user[key]]),
+        listAttributes.map((key) => [key, user[key]]),
       ),
       relationships: {
         watchedAddresses: {

@@ -292,6 +292,11 @@ function UserContentByUserId({
                         : `Every $${data.data.attributes.watchPriceChange.toLocaleString('en-US')}`
                     }
                   </Typography>
+                  <Typography component="p">
+                    Watch mempool clear:
+                    {' '}
+                    {data.data.attributes.watchMempoolClear ? 'On' : 'Off'}
+                  </Typography>
                 </Paper>
               </Grid>
               <Grid item xs={12}>

@@ -30,6 +30,8 @@ export enum BotCommandName {
   Uwpc = 'uwpc',
   WatchNewBlocks = 'watchnewblocks',
   UnwatchNewBlocks = 'unwatchnewblocks',
+  WatchMempoolClear = 'watchmempoolclear',
+  UnwatchMempoolClear = 'unwatchmempoolclear',
   ListWatches = 'listwatches',
   MempoolLinks = 'mempoollinks',
 }
@@ -122,6 +124,17 @@ export const telegramCommands: BotCommand[] = [
   {
     command: BotCommandName.Uwpc,
     description: `Short for /${BotCommandName.UnwatchPriceChange}.`,
+  },
+  {
+    command: BotCommandName.WatchMempoolClear,
+    description: [
+      'Get notification when all the transactions in the mempool could fit in the next block and',
+      'there is room for more, and when the mempool becomes full again.',
+    ].join(' '),
+  },
+  {
+    command: BotCommandName.UnwatchMempoolClear,
+    description: `Stop getting notifications of /${BotCommandName.WatchMempoolClear}.`,
   },
   {
     command: BotCommandName.MempoolLinks,

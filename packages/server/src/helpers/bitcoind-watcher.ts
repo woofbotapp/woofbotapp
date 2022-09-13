@@ -1004,6 +1004,13 @@ class BitcoindWatcher extends EventEmitter {
   getMempoolWeight(): number {
     return this.mempoolWeight ?? 0;
   }
+
+  isMempoolClear(): boolean | undefined {
+    if (this.mempoolWeight === undefined) {
+      return undefined;
+    }
+    return this.mempoolWeight < maxBlockWeight;
+  }
 }
 
 export const bitcoindWatcher = new BitcoindWatcher();

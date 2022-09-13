@@ -32,9 +32,7 @@ export function escapeMarkdown(text): string {
   return text.replaceAll(/([_*[\]()~`>#+-=|{}.!])/g, '\\$1');
 }
 
-const sponsorship = `\n\n*${
-  escapeMarkdown('Your sponsorship can be here! woofbot@protonmail.com')
-}*`;
+const sponsorship = `\n\n*Follow us on Twitter: [@woofbotapp](https://twitter.com/woofbotapp)*`;
 
 const startMessage = `${escapeMarkdown(`\
 🐶 Welcome to WoofBot, your personal telegram bot that will send you customized alerts.

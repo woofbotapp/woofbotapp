@@ -24,8 +24,9 @@ copies or substantial portions of the Software.
 ** Modification to the original MIT License conditions **
 
 You are not allowed to change the content of the sponsorship-message that is sent to the users,
-which is currently: "Your sponsorship can be here! woofbot@protonmail.com" and may change in 
-future versions of this software.
+which is currently: "Your sponsorship can be here! woofbot@protonmail.com"
+or "Follow us on Twitter: [@woofbotapp](https://twitter.com/woofbotapp)"
+and may change in future versions of this software.
 
 You are not allowed to change the logic that affect the use-cases and frequency in which the 
 sponsorship-message is sent to the users (except for unintentional bugs).

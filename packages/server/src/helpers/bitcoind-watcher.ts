@@ -70,7 +70,7 @@ const rawTransactionsBatchSize = 50;
 const maxAnalyzedBlocks = 5;
 const bitcoindWatcherErrorGraceMs = 10_000;
 const majorRecheckIntervalMs = 60_000;
-const recheckMempoolGraceMs = 10;
+const delayedTriggerTimeoutMs = 1;
 
 const startAttempts = 6;
 const startGraceMs = 20_000;
@@ -106,6 +106,8 @@ function txInStandardKey(parameters: Pick<TxInStandard, 'txid' | 'vout'>): strin
 }
 
 class BitcoindWatcher extends EventEmitter {
+  private delayedTriggerTimeout: ReturnType<typeof setTimeout> | undefined;
+
   private recheckMempoolTransactions: string[] | undefined;
 
   // Analyses is the plural of analysis
@@ -292,10 +294,7 @@ class BitcoindWatcher extends EventEmitter {
         }
       } else if (this.recheckMempoolTransactions) {
         // Do not re-trigger immediately. Give some runtime to other parts of the app.
-        setTimeout(
-          () => this.safeAsyncEmit(BitcoindWatcherEventName.Trigger),
-          recheckMempoolGraceMs,
-        );
+        this.delayedTriggerTimeout?.refresh();
         const recheckTxids = this.recheckMempoolTransactions.slice(0, rawTransactionsBatchSize);
         const leftTxids = this.recheckMempoolTransactions.slice(rawTransactionsBatchSize);
         const recheckTransactions = await getRawTransactionsBatch(recheckTxids);
@@ -959,7 +958,10 @@ class BitcoindWatcher extends EventEmitter {
         );
       }
     });
-    this.safeAsyncEmit(BitcoindWatcherEventName.Trigger);
+    this.delayedTriggerTimeout = setTimeout(
+      () => this.safeAsyncEmit(BitcoindWatcherEventName.Trigger),
+      delayedTriggerTimeoutMs,
+    );
   }
 
   watchNewTransaction(txid: string) {

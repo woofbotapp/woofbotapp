@@ -56,6 +56,10 @@ export interface NewAddressPaymentEvent {
   outcomeSats?: number;
 }
 
+export interface NewMempoolClearStatusEvent {
+  isClear: boolean;
+}
+
 const networks = {
   [Network.mainnet]: bitcoinjsNetworks.bitcoin,
   [Network.testnet]: bitcoinjsNetworks.testnet,
@@ -74,6 +78,8 @@ const startGraceMs = 20_000;
 const satsPerBitcoin = 100_000_000;
 
 const maxOngoingIncomeTransactions = 1000;
+
+const maxBlockWeight = 4_000_000;
 
 function confirmationsToTransactionStatus(confirmations: number): TransactionStatus {
   if (confirmations === 0) {
@@ -143,6 +149,8 @@ class BitcoindWatcher extends EventEmitter {
 
   private majorRecheckLastBestBlockHash: string | undefined;
 
+  private mempoolWeight: number | undefined;
+
   constructor() {
     super();
     this.on(BitcoindWatcherEventName.Trigger, () => this.runSafe());
@@ -153,7 +161,7 @@ class BitcoindWatcher extends EventEmitter {
     eventName: string,
     value?: (
       NewTransactionAnalysisEvent | TransactionAnalysis | NewBlockAnalyzedEvent
-      | NewAddressPaymentEvent | string
+      | NewAddressPaymentEvent | NewMempoolClearStatusEvent | string
     ),
   ) {
     // non-blocking
@@ -327,6 +335,21 @@ class BitcoindWatcher extends EventEmitter {
               this.recheckMempoolTransactions = mempoolTransactionIds;
             }
             this.shouldRerun = true;
+            const newMempoolWeight = Object.values(mempoolTransactions).reduce(
+              (soFar, { weight }) => soFar + weight,
+              0,
+            );
+            logger.info(`runSafe: new mempool weight: ${newMempoolWeight}`);
+            if (this.mempoolWeight !== undefined) {
+              const wasClear = this.mempoolWeight < maxBlockWeight;
+              const isClear = newMempoolWeight < maxBlockWeight;
+              if (wasClear !== isClear) {
+                this.safeAsyncEmit(BitcoindWatcherEventName.NewMempoolClearStatus, {
+                  isClear,
+                });
+              }
+            }
+            this.mempoolWeight = newMempoolWeight;
           }
         } catch (error) {
           this.checkMempool = true;

@@ -108,6 +108,13 @@ export interface BlockVerbosity2 {
   nextblockchash?: string;
 }
 
+interface RawMempoolTransaction {
+  // There are lots of other fields that we don't use. see:
+  // https://developer.bitcoin.org/reference/rpc/getrawmempool.html#result-for-verbose-true
+  weight: number;
+  time: number;
+}
+
 interface BitcoinRpcErrorJson {
   code: number;
   message: string;
@@ -285,11 +292,12 @@ export async function isTransactionInMempool(txid: string) {
   }
 }
 
-export async function getRawMempool(): Promise<string[] | undefined> {
+export async function getRawMempool(): Promise<
+  Record<string, RawMempoolTransaction> | undefined> {
   try {
-    const response: string[] = await rpc({
+    const response: Record<string, RawMempoolTransaction> = await rpc({
       method: 'getrawmempool',
-      params: { verbose: false },
+      params: { verbose: true },
     });
     return response;
   } catch (error) {

@@ -315,10 +315,17 @@ class BitcoindWatcher extends EventEmitter {
         this.shouldRerun = true;
         this.checkMempool = false;
         try {
+          logger.info('runSafe: getting raw mempool');
           const mempoolTransactions = await getRawMempool();
           if (mempoolTransactions) {
-            logger.info(`mempoolTransactions: ${mempoolTransactions.length}`);
-            this.recheckMempoolTransactions = mempoolTransactions;
+            const mempoolTransactionIds = Object.keys(mempoolTransactions);
+            logger.info(
+              `runSafe: mempoolTransactions: ${mempoolTransactionIds.length}`,
+            );
+            if (this.checkMempoolConflictsAndIncomes) {
+              // no need to check the transactions otherwise
+              this.recheckMempoolTransactions = mempoolTransactionIds;
+            }
             this.shouldRerun = true;
           }
         } catch (error) {

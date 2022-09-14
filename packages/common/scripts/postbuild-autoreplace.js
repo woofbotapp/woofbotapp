@@ -8,6 +8,8 @@ function main() {
   console.info(`Fixing: ${buildPath}`);
   const payload = fs.readFileSync(buildPath).toString();
   fs.writeFileSync(buildPath, payload.replaceAll('%VERSION%', rootPackage.version));
+  // eslint-disable-next-line no-console
+  console.info('Fix completed');
 }
 
 if (require.main === module) {

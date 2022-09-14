@@ -1,4 +1,4 @@
-import { AppName } from '@woofbot/common';
+import { AppName, AppVersion } from '@woofbot/common';
 import express from 'express';
 import expressWinston from 'express-winston';
 import helmet from 'helmet';
@@ -86,7 +86,7 @@ app.use((err, _req, res, _next) => {
 
 // start the server
 (async () => {
-  logger.info(`NODE_ENV: ${process.env.NODE_ENV}`);
+  logger.info(`Starting ${AppName} v${AppVersion}, NODE_ENV: ${process.env.NODE_ENV}`);
   for (const envKey of [
     'MONGODB_URI', 'APP_SEED', 'APP_PASSWORD', 'APP_BITCOIN_NODE_IP', 'APP_BITCOIN_RPC_USER',
     'APP_BITCOIN_RPC_PASS', 'APP_BITCOIN_RPC_PORT', 'APP_PORT',
@@ -151,7 +151,7 @@ app.use((err, _req, res, _next) => {
     }
   }
   app.listen(port, () => {
-    logger.info(`app ${AppName} started at http://localhost:${port}`);
+    logger.info(`app ${AppName} v${AppVersion} started at http://localhost:${port}`);
   });
 })().catch((error) => {
   // Crash with error

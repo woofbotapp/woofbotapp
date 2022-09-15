@@ -19,7 +19,7 @@ do
   then
     echo "broadcast $index"
   fi
-  bitcoin-cli sendtoaddress `bitcoin-cli getnewaddress` 0.001 > /dev/null
+  bitcoin-cli -named sendtoaddress address=`bitcoin-cli getnewaddress` amount=0.001 fee_rate=1.01 > /dev/null
 done
 echo "Mempool Info:"
 bitcoin-cli getmempoolinfo

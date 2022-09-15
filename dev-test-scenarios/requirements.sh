@@ -19,3 +19,7 @@ fi
 if [ $JQ_INSTALLED -ne 0 ]; then
   apt install -y jq
 fi
+
+# Create wallet if does not exist
+bitcoin-cli createwallet testwallet 2> /dev/null
+bitcoin-cli loadwallet testwallet 2> /dev/null

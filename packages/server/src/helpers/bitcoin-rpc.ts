@@ -137,7 +137,7 @@ type BitcoinRpcResponse<T> = BitcoinRpcSuccessResponse<T> | BitcoinRpcFailRespon
 
 const bitcoinRpcUrl = `http://${
   process.env.APP_BITCOIN_NODE_IP || 'localhost'
-}:${process.env.APP_BITCOIN_RPC_PORT || 18444}`;
+}:${process.env.APP_BITCOIN_RPC_PORT || 8332}`;
 
 const bitcoinRpcHttpOptions = {
   method: 'POST',

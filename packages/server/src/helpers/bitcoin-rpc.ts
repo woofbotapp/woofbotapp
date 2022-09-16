@@ -55,7 +55,6 @@ type TxIn = TxInCoinbase | TxInStandard;
 interface TxOutScriptPubKey {
   asm: string;
   hex: string;
-  reqSigs: number;
   type: string;
   addresses?: string[];
 }

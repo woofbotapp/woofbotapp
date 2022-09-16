@@ -56,6 +56,7 @@ interface TxOutScriptPubKey {
   asm: string;
   hex: string;
   type: string;
+  address?: string;
   addresses?: string[];
 }
 
@@ -63,6 +64,21 @@ interface TxOut {
   value: number
   n: number
   scriptPubKey: TxOutScriptPubKey;
+}
+
+export function getOutAddresses(txOut: TxOut): string[] {
+  if (!txOut.scriptPubKey.addresses) {
+    // modern api
+    return txOut.scriptPubKey.address ? [txOut.scriptPubKey.address] : [];
+  }
+  const { address } = txOut.scriptPubKey;
+  if (!address || txOut.scriptPubKey.addresses.includes(address)) {
+    return txOut.scriptPubKey.addresses;
+  }
+  return [
+    ...txOut.scriptPubKey.addresses,
+    address,
+  ];
 }
 
 // When the transaction is specified in a specific block details

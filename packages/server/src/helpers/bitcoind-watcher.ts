@@ -10,7 +10,7 @@ import { errorString } from './error';
 import {
   ChainInfo, BlockVerbosity2, getBestBlockHash, getBlock, getBlockchainInfo, getBlockTransactions,
   getNotificationAddresses, getRawMempool, getRawTransaction, getRawTransactionsBatch,
-  isTransactionInMempool, TxInStandard, BlockTransaction, RawTransaction,
+  isTransactionInMempool, TxInStandard, BlockTransaction, RawTransaction, getOutAddresses,
 } from './bitcoin-rpc';
 import { TransactionStatus } from '../models/watched-transactions';
 
@@ -569,7 +569,7 @@ class BitcoindWatcher extends EventEmitter {
   private reportIncomes(transaction: BlockTransaction, confirmations: number) {
     const matchingAddresses: Set<string> = new Set();
     for (const txOut of transaction.vout) {
-      for (const txOutAddress of txOut.scriptPubKey.addresses ?? []) {
+      for (const txOutAddress of getOutAddresses(txOut)) {
         if (this.watchedAddresses.has(txOutAddress)) {
           matchingAddresses.add(txOutAddress);
         }
@@ -601,10 +601,10 @@ class BitcoindWatcher extends EventEmitter {
     }
     const newTransactionStatus = confirmationsToTransactionStatus(confirmations);
     const txOuts = rawTransaction.vout.filter(
-      (txOut) => txOut.scriptPubKey.addresses?.includes(watchedAddress),
+      (txOut) => getOutAddresses(txOut).includes(watchedAddress),
     );
     const multiAddress = txOuts.some(
-      (txOut) => ((txOut.scriptPubKey.addresses ?? []).length > 1),
+      (txOut) => (getOutAddresses(txOut).length > 1),
     );
     const incomeSats = txOuts.reduce(
       (partialSum, txOut) => partialSum + Math.round(txOut.value * satsPerBitcoin),
@@ -794,7 +794,7 @@ class BitcoindWatcher extends EventEmitter {
       );
       for (const someInputTransaction of someInputTransactions) {
         if (someInputTransaction.vout.some(
-          (txOut) => txOut.scriptPubKey.addresses?.some(
+          (txOut) => getOutAddresses(txOut).some(
             (ad) => this.watchedAddresses.has(ad),
           ),
         )) {
@@ -813,10 +813,10 @@ class BitcoindWatcher extends EventEmitter {
           continue;
         }
         const txOut = inputTransaction.vout[txIn.vout];
-        if (!txOut || !txOut.scriptPubKey.addresses) {
+        if (!txOut) {
           continue;
         }
-        for (const spendingAddress of txOut.scriptPubKey.addresses) {
+        for (const spendingAddress of getOutAddresses(txOut)) {
           if (this.watchedAddresses.has(spendingAddress)) {
             spendingByAddresses.set(
               spendingAddress,

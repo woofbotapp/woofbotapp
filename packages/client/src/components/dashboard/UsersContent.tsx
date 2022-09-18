@@ -73,7 +73,7 @@ export default function UsersContent() {
                     <TableRow>
                       <TableCell>Id</TableCell>
                       <TableCell>Telegram Id</TableCell>
-                      <TableCell>Telgram Username</TableCell>
+                      <TableCell>Telegram Username</TableCell>
                       <TableCell>Created At</TableCell>
                       <TableCell>Updated At</TableCell>
                       <TableCell align="right" />

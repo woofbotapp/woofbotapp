@@ -28,9 +28,13 @@ interface TextContext extends Context {
   message: Context['message'] & TextMessage & { reply_to_message?: TextMessage };
 }
 
-export function escapeMarkdown(text): string {
+export function escapeMarkdown(text: string): string {
   // escape Markdown V2
   return text.replaceAll(/([_*[\]()~`>#+-=|{}.!])/g, '\\$1');
+}
+
+function prettyBlockHash(blockHash: string): string {
+  return `0..0${blockHash.replace(/^0+/, '')}`;
 }
 
 const sponsorship = `\n\n*Follow us on Twitter: [@woofbotapp](https://twitter.com/woofbotapp)*`;
@@ -205,7 +209,7 @@ export class TelegrafManager {
       if (watchNewBlocksUsers.length > 0) {
         const newBlocksHashes = event.blockHashes.slice(-event.newBlocks);
         const messages = newBlocksHashes.map(
-          (blockHash, index) => `Block ${blockHash} at height ${
+          (blockHash, index) => `Block ${prettyBlockHash(blockHash)} at height ${
             event.bestBlockHeight - event.newBlocks + index + 1
           }`,
         );
@@ -506,7 +510,7 @@ export class TelegrafManager {
               messages.push(
                 `⛓️ Woof! Transaction ${transactionName} has been added to the blockchain`,
                 `in block ${
-                  [...newAnalysis.blockHashes].join(', ') || 'unknown'
+                  [...newAnalysis.blockHashes].map(prettyBlockHash).join(', ') || 'unknown'
                 }.`,
               );
               break;
@@ -514,7 +518,9 @@ export class TelegrafManager {
               messages.push(
                 `🚀 Woof! Transaction ${transactionName} has ${newAnalysis.confirmations}`,
                 'confirmations and is now fully confirmed.',
-                `It was mined in block ${[...newAnalysis.blockHashes].join(', ') || 'unknown'}.`,
+                `It was mined in block ${
+                  [...newAnalysis.blockHashes].map(prettyBlockHash).join(', ') || 'unknown'
+                }.`,
                 'I will no longer watch this transaction.',
               );
               break;
@@ -1082,7 +1088,7 @@ export class TelegrafManager {
                 : `${analysis.confirmations} confirmations`
             }.`,
             `It was mined in block ${
-              [...analysis.blockHashes].join(', ') || 'unknown'
+              [...analysis.blockHashes].map(prettyBlockHash).join(', ') || 'unknown'
             }.`,
           );
           break;
@@ -1092,7 +1098,7 @@ export class TelegrafManager {
               analysis.confirmations
             } confirmations and is fully confirmed, so there is no need to watch it anymore.`,
             `It was mined in block ${
-              [...analysis.blockHashes].join(', ') || 'unknown'
+              [...analysis.blockHashes].map(prettyBlockHash).join(', ') || 'unknown'
             }.`,
           );
           break;
@@ -1476,21 +1482,19 @@ export class TelegrafManager {
       ));
       return;
     }
-    const parts = replyToMessage.text.split(/[^0-9a-zA-Z]+/).filter(
-      (part) => part && (part.length <= 64),
-    );
+    const parts = replyToMessage.text.split(/[^0-9a-zA-Z.]+/).map(
+      (part) => part.replace(/(^\.+|\.+$)/, ''),
+    ).filter((part) => part && (part.length <= 128));
     const links: string[] = [];
-    let isNextPartBlock = false;
     for (const part of parts) {
-      if (['block', 'blocks'].includes(part.toLowerCase())) {
-        isNextPartBlock = true;
-      } else if (validate(part, bitcoindWatcher.getChain())) {
-        isNextPartBlock = false;
+      if (validate(part, bitcoindWatcher.getChain())) {
         links.push(`https://mempool.space/address/${part}`);
+      } else if (/^0\.\.0[0-9a-fA-F]+/.test(part)) {
+        links.push(`https://mempool.space/block/${
+          part.replace(/^0\.\.0/, '').padStart(64, '0')
+        }`);
       } else if (/^[0-9a-fA-F]{64}$/.test(part)) {
-        links.push(`https://mempool.space/${isNextPartBlock ? 'block' : 'tx'}/${part}`);
-      } else {
-        isNextPartBlock = false;
+        links.push(`https://mempool.space/tx/${part}`);
       }
     }
     if (links.length === 0) {

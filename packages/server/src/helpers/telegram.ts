@@ -312,14 +312,14 @@ export class TelegrafManager {
           messages.push(
             `Address ${addressName} ${
               (status === TransactionStatus.FullConfirmation) ? 'has received' : 'is receiving'
-            } ${incomeSats} sats by transaction ${txid}.`,
+            } ${incomeSats.toLocaleString('en-US')} sats by transaction ${txid}.`,
           );
         }
         if (outcomeSats !== undefined) {
           messages.push(
             `Address ${addressName} ${
               (status === TransactionStatus.FullConfirmation) ? 'has sent' : 'is sending'
-            } ${outcomeSats} sats by transaction ${txid}.`,
+            } ${outcomeSats.toLocaleString('en-US')} sats by transaction ${txid}.`,
           );
         }
         switch (status) {

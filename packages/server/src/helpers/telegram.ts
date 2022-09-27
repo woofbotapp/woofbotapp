@@ -822,10 +822,11 @@ export class TelegrafManager {
                 user.telegramUsername = ctx.from.username;
               }
             }
+            const args = ctx.message.text.split(/\s+/).slice(1);
             if (this[command]) {
-              await this[command](ctx, user);
+              await this[command](ctx, user, args);
             } else {
-              await TelegrafManager[command](ctx, user);
+              await TelegrafManager[command](ctx, user, args);
             }
           } catch (error) {
             logger.error(
@@ -972,9 +973,9 @@ export class TelegrafManager {
     ctx.replyWithMarkdownV2(escapeMarkdown('Stopped watching new blocks.'));
   }
 
-  async [BotCommandName.WatchTransaction](ctx: TextContext, user: UserDocument) {
-    const [commandName, ...args] = ctx.message.text.split(/\s+/);
+  async [BotCommandName.WatchTransaction](ctx: TextContext, user: UserDocument, args: string[]) {
     if (args.length === 0) {
+      const [commandName] = ctx.message.text.split(/\s+/);
       ctx.replyWithMarkdownV2(escapeMarkdown([
         `Syntax: "${commandName} <transaction-id>" or "${
           commandName
@@ -1143,13 +1144,17 @@ export class TelegrafManager {
     }
   }
 
-  async [BotCommandName.Wtx](ctx: TextContext, user: UserDocument) {
-    return this[BotCommandName.WatchTransaction](ctx, user);
+  async [BotCommandName.Wtx](ctx: TextContext, user: UserDocument, args: string[]) {
+    return this[BotCommandName.WatchTransaction](ctx, user, args);
   }
 
-  static async [BotCommandName.UnwatchTransactions](ctx: TextContext, user: UserDocument) {
-    const [commandName, ...args] = ctx.message.text.split(/\s+/);
+  static async [BotCommandName.UnwatchTransactions](
+    ctx: TextContext,
+    user: UserDocument,
+    args: string[],
+  ) {
     if (args.length === 0) {
+      const [commandName] = ctx.message.text.split(/\s+/);
       ctx.replyWithMarkdownV2(escapeMarkdown(
         `Syntax: "${commandName} <transaction-id-in-lowercase>" or "${
           commandName
@@ -1201,13 +1206,17 @@ export class TelegrafManager {
     ));
   }
 
-  static async [BotCommandName.Uwtxs](ctx: TextContext, user: UserDocument) {
-    return TelegrafManager[BotCommandName.UnwatchTransactions](ctx, user);
+  static async [BotCommandName.Uwtxs](ctx: TextContext, user: UserDocument, args: string[]) {
+    return TelegrafManager[BotCommandName.UnwatchTransactions](ctx, user, args);
   }
 
-  static async [BotCommandName.WatchAddresses](ctx: TextContext, user: UserDocument) {
-    const [commandName, ...args] = ctx.message.text.split(/\s+/);
+  static async [BotCommandName.WatchAddresses](
+    ctx: TextContext,
+    user: UserDocument,
+    args: string[],
+  ) {
     if (args.length === 0) {
+      const [commandName] = ctx.message.text.split(/\s+/);
       ctx.replyWithMarkdownV2(escapeMarkdown([
         `Syntax: "${commandName} <address1> <address2> ..." or "${
           commandName
@@ -1297,13 +1306,17 @@ export class TelegrafManager {
     ].join(' ')));
   }
 
-  static async [BotCommandName.Wads](ctx: TextContext, user: UserDocument) {
-    return TelegrafManager[BotCommandName.WatchAddresses](ctx, user);
+  static async [BotCommandName.Wads](ctx: TextContext, user: UserDocument, args: string[]) {
+    return TelegrafManager[BotCommandName.WatchAddresses](ctx, user, args);
   }
 
-  static async [BotCommandName.UnwatchAddresses](ctx: TextContext, user: UserDocument) {
-    const [commandName, ...args] = ctx.message.text.split(/\s+/);
+  static async [BotCommandName.UnwatchAddresses](
+    ctx: TextContext,
+    user: UserDocument,
+    args: string[],
+  ) {
     if (args.length === 0) {
+      const [commandName] = ctx.message.text.split(/\s+/);
       ctx.replyWithMarkdownV2(escapeMarkdown(
         `Syntax: "${commandName} <address>" or "${
           commandName
@@ -1355,13 +1368,17 @@ export class TelegrafManager {
     ));
   }
 
-  static async [BotCommandName.Uwads](ctx: TextContext, user: UserDocument) {
-    return TelegrafManager[BotCommandName.UnwatchAddresses](ctx, user);
+  static async [BotCommandName.Uwads](ctx: TextContext, user: UserDocument, args: string[]) {
+    return TelegrafManager[BotCommandName.UnwatchAddresses](ctx, user, args);
   }
 
-  static async [BotCommandName.WatchPriceChange](ctx: TextContext, user: UserDocument) {
-    const [commandName, ...args] = ctx.message.text.split(/\s+/);
+  static async [BotCommandName.WatchPriceChange](
+    ctx: TextContext,
+    user: UserDocument,
+    args: string[],
+  ) {
     if ((args.length === 0) || (args.length > 1)) {
+      const [commandName] = ctx.message.text.split(/\s+/);
       ctx.replyWithMarkdownV2(escapeMarkdown([
         `Syntax: "${commandName} <price-delta-in-usd>"`,
         `i.e. To get a notification when the price changes by $1000, use "${commandName} 1000".`,
@@ -1404,8 +1421,8 @@ export class TelegrafManager {
     }
   }
 
-  static async [BotCommandName.Wpc](ctx: TextContext, user: UserDocument) {
-    return TelegrafManager[BotCommandName.WatchPriceChange](ctx, user);
+  static async [BotCommandName.Wpc](ctx: TextContext, user: UserDocument, args: string[]) {
+    return TelegrafManager[BotCommandName.WatchPriceChange](ctx, user, args);
   }
 
   static async [BotCommandName.UnwatchPriceChange](ctx: TextContext, user: UserDocument) {

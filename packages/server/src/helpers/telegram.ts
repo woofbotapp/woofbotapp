@@ -58,6 +58,10 @@ const messageQueueMaxSize = 10_000;
 const transactionAnalysisTimeoutMs = 300_000;
 const blockSkippedWarningBackoffMs = 300_000;
 
+const telegramCommandByName = new Map(
+  telegramCommands.map((telegramCommand) => [telegramCommand.command, telegramCommand]),
+);
+
 export class TelegrafManager {
   private internalBot: Telegraf | undefined = undefined;
 
@@ -822,7 +826,21 @@ export class TelegrafManager {
                 user.telegramUsername = ctx.from.username;
               }
             }
-            const args = ctx.message.text.split(/\s+/).slice(1);
+            const args = ctx.message.text.trim().split(/\s+/).slice(1);
+            const parametersRequestMessage = telegramCommandByName.get(
+              command,
+            )?.parametersRequestMessage;
+            if ((args.length === 0) && parametersRequestMessage) {
+              await ctx.replyWithMarkdownV2(
+                escapeMarkdown(parametersRequestMessage),
+                {
+                  reply_markup: {
+                    force_reply: true,
+                  },
+                },
+              );
+              return;
+            }
             if (this[command]) {
               await this[command](ctx, user, args);
             } else {
@@ -976,16 +994,6 @@ export class TelegrafManager {
   }
 
   async [BotCommandName.WatchTransaction](ctx: TextContext, user: UserDocument, args: string[]) {
-    if (args.length === 0) {
-      const [commandName] = ctx.message.text.split(/\s+/);
-      ctx.replyWithMarkdownV2(escapeMarkdown([
-        `Syntax: "${commandName} <transaction-id>" or "${
-          commandName
-        } <transaction-nickname>:<transaction-id>".`,
-        'Transaction nickname must not contain spaces or more than 100 characters.',
-      ].join(' ')));
-      return;
-    }
     if (args.length > 1) {
       ctx.replyWithMarkdownV2(escapeMarkdown('Too many parameters'));
       return;
@@ -998,7 +1006,7 @@ export class TelegrafManager {
     }
     const nickname = parts.join(':');
     if (nickname.length > 100) {
-      ctx.replyWithMarkdownV2(escapeMarkdown('Invalid transaction nickname.'));
+      ctx.replyWithMarkdownV2(escapeMarkdown('The transaction nickname is too long.'));
       return;
     }
     if (nickname && await WatchedTransactionsModel.findOne({
@@ -1151,17 +1159,6 @@ export class TelegrafManager {
     user: UserDocument,
     args: string[],
   ) {
-    if (args.length === 0) {
-      const [commandName] = ctx.message.text.split(/\s+/);
-      ctx.replyWithMarkdownV2(escapeMarkdown(
-        `Syntax: "${commandName} <transaction-id-in-lowercase>" or "${
-          commandName
-        } <transaction-nickname>" or "${
-          commandName
-        } <transaction-id-prefix-in-lowercase>*". Don't forget the '*' when using a prefix match.`,
-      ));
-      return;
-    }
     const transactions = await WatchedTransactionsModel.find({
       userId: user._id,
       $or: [
@@ -1209,16 +1206,6 @@ export class TelegrafManager {
     user: UserDocument,
     args: string[],
   ) {
-    if (args.length === 0) {
-      const [commandName] = ctx.message.text.split(/\s+/);
-      ctx.replyWithMarkdownV2(escapeMarkdown([
-        `Syntax: "${commandName} <address1> <address2> ..." or "${
-          commandName
-        } <address1-nickname>:<address1> <address2-nickname>:<address2>...".`,
-        'Address nickname must not contain spaces or more than 100 characters.',
-      ].join(' ')));
-      return;
-    }
     const addresses: [string | undefined, string][] = [];
     for (const arg of args) {
       const parts = arg.split(':');
@@ -1229,7 +1216,7 @@ export class TelegrafManager {
       }
       const nickname = parts.join(':');
       if (nickname.length > 100) {
-        ctx.replyWithMarkdownV2(escapeMarkdown('Invalid address nickname.'));
+        ctx.replyWithMarkdownV2(escapeMarkdown('The address nickname is too long.'));
         return;
       }
       addresses.push([
@@ -1305,17 +1292,6 @@ export class TelegrafManager {
     user: UserDocument,
     args: string[],
   ) {
-    if (args.length === 0) {
-      const [commandName] = ctx.message.text.split(/\s+/);
-      ctx.replyWithMarkdownV2(escapeMarkdown(
-        `Syntax: "${commandName} <address>" or "${
-          commandName
-        } <address-nickname>" or "${
-          commandName
-        } <address-prefix>*". Don't forget the '*' when using a prefix match.`,
-      ));
-      return;
-    }
     const watchedAddresses = await WatchedAddressesModel.find({
       userId: user._id,
       $or: [
@@ -1363,7 +1339,7 @@ export class TelegrafManager {
     user: UserDocument,
     args: string[],
   ) {
-    if ((args.length === 0) || (args.length > 1)) {
+    if (args.length > 1) {
       const [commandName] = ctx.message.text.split(/\s+/);
       ctx.replyWithMarkdownV2(escapeMarkdown([
         `Syntax: "${commandName} <price-delta-in-usd>"`,

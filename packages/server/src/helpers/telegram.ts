@@ -1144,10 +1144,6 @@ export class TelegrafManager {
     }
   }
 
-  async [BotCommandName.Wtx](ctx: TextContext, user: UserDocument, args: string[]) {
-    return this[BotCommandName.WatchTransaction](ctx, user, args);
-  }
-
   static async [BotCommandName.UnwatchTransactions](
     ctx: TextContext,
     user: UserDocument,
@@ -1204,10 +1200,6 @@ export class TelegrafManager {
         (deleteResult.deletedCount === 1) ? 'transaction-watch was' : 'transaction-watches were'
       } removed.`,
     ));
-  }
-
-  static async [BotCommandName.Uwtxs](ctx: TextContext, user: UserDocument, args: string[]) {
-    return TelegrafManager[BotCommandName.UnwatchTransactions](ctx, user, args);
   }
 
   static async [BotCommandName.WatchAddresses](
@@ -1306,10 +1298,6 @@ export class TelegrafManager {
     ].join(' ')));
   }
 
-  static async [BotCommandName.Wads](ctx: TextContext, user: UserDocument, args: string[]) {
-    return TelegrafManager[BotCommandName.WatchAddresses](ctx, user, args);
-  }
-
   static async [BotCommandName.UnwatchAddresses](
     ctx: TextContext,
     user: UserDocument,
@@ -1368,10 +1356,6 @@ export class TelegrafManager {
     ));
   }
 
-  static async [BotCommandName.Uwads](ctx: TextContext, user: UserDocument, args: string[]) {
-    return TelegrafManager[BotCommandName.UnwatchAddresses](ctx, user, args);
-  }
-
   static async [BotCommandName.WatchPriceChange](
     ctx: TextContext,
     user: UserDocument,
@@ -1421,10 +1405,6 @@ export class TelegrafManager {
     }
   }
 
-  static async [BotCommandName.Wpc](ctx: TextContext, user: UserDocument, args: string[]) {
-    return TelegrafManager[BotCommandName.WatchPriceChange](ctx, user, args);
-  }
-
   static async [BotCommandName.UnwatchPriceChange](ctx: TextContext, user: UserDocument) {
     await UsersModel.updateOne(
       {
@@ -1442,10 +1422,6 @@ export class TelegrafManager {
     if (user.watchPriceChange) {
       priceWatcher.unwatchPriceChange(user._id.toString());
     }
-  }
-
-  static async [BotCommandName.Uwpc](ctx: TextContext, user: UserDocument) {
-    return TelegrafManager[BotCommandName.UnwatchPriceChange](ctx, user);
   }
 
   static async [BotCommandName.WatchMempoolClear](ctx: TextContext, user: UserDocument) {

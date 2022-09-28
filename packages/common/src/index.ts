@@ -18,16 +18,10 @@ export enum BotCommandName {
   Quit = 'quit',
   WatchTransaction = 'watchtransaction',
   UnwatchTransactions = 'unwatchtransactions',
-  Wtx = 'wtx',
-  Uwtxs = 'uwtxs',
   WatchAddresses = 'watchaddresses',
   UnwatchAddresses = 'unwatchaddresses',
-  Wads = 'wads',
-  Uwads = 'uwads',
   WatchPriceChange = 'watchpricechange',
   UnwatchPriceChange = 'unwatchpricechange',
-  Wpc = 'wpc',
-  Uwpc = 'uwpc',
   WatchNewBlocks = 'watchnewblocks',
   UnwatchNewBlocks = 'unwatchnewblocks',
   WatchMempoolClear = 'watchmempoolclear',
@@ -78,16 +72,8 @@ export const telegramCommands: BotCommand[] = [
     ].join(' '),
   },
   {
-    command: BotCommandName.Wtx,
-    description: `Short for /${BotCommandName.WatchTransaction}.`,
-  },
-  {
     command: BotCommandName.UnwatchTransactions,
     description: 'Stop getting notifications about one or more transactions.',
-  },
-  {
-    command: BotCommandName.Uwtxs,
-    description: `Short for /${BotCommandName.UnwatchTransactions}.`,
   },
   {
     command: BotCommandName.WatchAddresses,
@@ -98,32 +84,16 @@ export const telegramCommands: BotCommand[] = [
     ].join(' '),
   },
   {
-    command: BotCommandName.Wads,
-    description: `Short for /${BotCommandName.WatchAddresses}.`,
-  },
-  {
     command: BotCommandName.UnwatchAddresses,
     description: 'Stop getting notifications about one or more addresses.',
-  },
-  {
-    command: BotCommandName.Uwads,
-    description: `Short for /${BotCommandName.UnwatchAddresses}.`,
   },
   {
     command: BotCommandName.WatchPriceChange,
     description: 'Watch changes in the price of Bitcoin (in USD).',
   },
   {
-    command: BotCommandName.Wpc,
-    description: `Short for /${BotCommandName.WatchPriceChange}.`,
-  },
-  {
     command: BotCommandName.UnwatchPriceChange,
     description: 'Stop getting notifications about changes in the price of Bitcoin.',
-  },
-  {
-    command: BotCommandName.Uwpc,
-    description: `Short for /${BotCommandName.UnwatchPriceChange}.`,
   },
   {
     command: BotCommandName.WatchMempoolClear,

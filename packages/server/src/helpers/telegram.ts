@@ -877,7 +877,9 @@ export class TelegrafManager {
       await bot.launch({
         dropPendingUpdates: true,
       });
-      await bot.telegram.setMyCommands(telegramCommands);
+      await bot.telegram.setMyCommands(
+        telegramCommands.map(({ command, description }) => ({ command, description })),
+      );
       this.internalBot = bot;
       this.internalStatus = TelegramStatus.Running;
     } catch (error) {

@@ -62,6 +62,12 @@ const telegramCommandByName = new Map(
   telegramCommands.map((telegramCommand) => [telegramCommand.command, telegramCommand]),
 );
 
+const telegramCommandByParametersRequestMessage = new Map(
+  telegramCommands.filter(
+    (telegramCommand) => telegramCommand.parametersRequestMessage,
+  ).map((telegramCommand) => [telegramCommand.parametersRequestMessage, telegramCommand]),
+);
+
 export class TelegrafManager {
   private internalBot: Telegraf | undefined = undefined;
 
@@ -841,11 +847,7 @@ export class TelegrafManager {
               );
               return;
             }
-            if (this[command]) {
-              await this[command](ctx, user, args);
-            } else {
-              await TelegrafManager[command](ctx, user, args);
-            }
+            await this.runCommand(command, ctx as TextContext, user, args);
           } catch (error) {
             logger.error(
               `TelegrafManager: Failed to run command ${command} for chat-id ${
@@ -881,8 +883,31 @@ export class TelegrafManager {
       });
       bot.hears(/.*/, async (ctx) => {
         try {
+          const textContext = ctx as TextContext;
+          const replyToMessageText = textContext.message.reply_to_message?.text;
+          const telegramCommand = (
+            replyToMessageText && telegramCommandByParametersRequestMessage.get(
+              replyToMessageText,
+            )
+          );
+          if (telegramCommand) {
+            const args = ctx.message.text.trim().split(/\s+/).filter((arg) => arg);
+            if (args.length > 0) {
+              const user = ctx.from?.id && await UsersModel.findOne(
+                {
+                  telegramFromId: ctx.from.id,
+                },
+              );
+              if (!user) {
+                await ctx.replyWithMarkdownV2(notFoundMessage);
+                return;
+              }
+              await this.runCommand(telegramCommand.command, textContext, user, args);
+              return;
+            }
+          }
           await ctx.replyWithMarkdownV2(escapeMarkdown(
-            'Woof! See /help.',
+            'Woof! I could not understand you. See /help.',
           ));
         } catch (error) {
           logger.error(
@@ -910,6 +935,19 @@ export class TelegrafManager {
           errorString(stopError)
         }`);
       }
+    }
+  }
+
+  async runCommand(
+    command: BotCommandName,
+    ctx: TextContext,
+    user: UserDocument,
+    args: string[],
+  ) {
+    if (this[command]) {
+      await this[command](ctx, user, args);
+    } else {
+      await TelegrafManager[command](ctx, user, args);
     }
   }
 

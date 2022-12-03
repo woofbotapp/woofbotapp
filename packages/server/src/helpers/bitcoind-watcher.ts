@@ -512,7 +512,7 @@ class BitcoindWatcher extends EventEmitter {
     const transaction = Transaction.fromBuffer(transactionPayload);
     if (transaction.isCoinbase()) {
       this.checkNewBlock = true;
-      this.safeAsyncEmit(BitcoindWatcherEventName.Trigger);
+      this.delayedTriggerTimeout?.refresh();
     }
     const txid = transaction.getId();
     const analysis = this.transactionAnalyses.get(txid);
@@ -524,7 +524,7 @@ class BitcoindWatcher extends EventEmitter {
       })
     ) {
       this.transactionsToReanalyze.push(txid);
-      this.safeAsyncEmit(BitcoindWatcherEventName.Trigger);
+      this.delayedTriggerTimeout?.refresh();
     }
     const txInKeys = transaction.ins.map((transactionInput) => txInStandardKey({
       txid: transactionInput.hash.reverse().toString('hex'),
@@ -860,7 +860,7 @@ class BitcoindWatcher extends EventEmitter {
         }
       }
       this.checkMempool = true;
-      this.safeAsyncEmit(BitcoindWatcherEventName.Trigger);
+      this.delayedTriggerTimeout?.refresh();
       logger.info('majorRecheck: finished');
     } catch (error) {
       logger.error(`BitcoindWatcher: Failed to run major recheck ${errorString(error)}`);
@@ -933,7 +933,7 @@ class BitcoindWatcher extends EventEmitter {
         if (messageType === 'C') {
           logger.info('BitcoindWatcher: New block from zmq-sequence message');
           this.checkNewBlock = true;
-          this.safeAsyncEmit(BitcoindWatcherEventName.Trigger);
+          this.delayedTriggerTimeout?.refresh();
         }
       });
     }
@@ -966,12 +966,12 @@ class BitcoindWatcher extends EventEmitter {
 
   watchNewTransaction(txid: string) {
     this.newTransactionsToWatch.push(txid);
-    this.safeAsyncEmit(BitcoindWatcherEventName.Trigger);
+    this.delayedTriggerTimeout?.refresh();
   }
 
   unwatchTransaction(txid: string) {
     this.transactionsToUnwatch.push(txid);
-    this.safeAsyncEmit(BitcoindWatcherEventName.Trigger);
+    this.delayedTriggerTimeout?.refresh();
   }
 
   watchAddress(watchedAddress: string) {

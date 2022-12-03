@@ -169,9 +169,7 @@ class BitcoindWatcher extends EventEmitter {
     // non-blocking
     setImmediate(() => {
       try {
-        if (eventName !== BitcoindWatcherEventName.Trigger) {
-          logger.info(`asyncEmit: emitting ${eventName}`);
-        }
+        logger.info(`asyncEmit: emitting ${eventName}`);
         this.emit(eventName, value);
       } catch (error) {
         logger.error(`asyncEmit: failed to emit ${eventName}: ${errorString(error)}`);
@@ -363,7 +361,10 @@ class BitcoindWatcher extends EventEmitter {
     }
     this.isRunning = false;
     if (this.shouldRerun) {
-      this.safeAsyncEmit(BitcoindWatcherEventName.Trigger);
+      // Event handlers run immediately when events are emitted.
+      // We want to let the event-loop run other things before we run again.
+      await Promise.resolve();
+      this.emit(BitcoindWatcherEventName.Trigger);
     }
   }
 
@@ -959,7 +960,7 @@ class BitcoindWatcher extends EventEmitter {
       }
     });
     this.delayedTriggerTimeout = setTimeout(
-      () => this.safeAsyncEmit(BitcoindWatcherEventName.Trigger),
+      () => this.emit(BitcoindWatcherEventName.Trigger),
       delayedTriggerTimeoutMs,
     );
   }

@@ -1,6 +1,10 @@
 export function errorString(error: unknown): string {
-  if (error instanceof Error) {
-    return error.stack ?? `${error}`;
+  try {
+    if (error instanceof Error) {
+      return error.stack ?? `${error}`;
+    }
+    return `${error}`;
+  } catch (_error) {
+    return 'Failed to convert error to string';
   }
-  return `${error}`;
 }

@@ -996,6 +996,11 @@ export class TelegrafManager {
   }
 
   static async [BotCommandName.WatchNewBlocks](ctx: TextContext) {
+    const settings = await SettingsModel.findById(zeroObjectId);
+    if (!settings) {
+      ctx.replyWithMarkdownV2(notFoundMessage);
+      return;
+    }
     const found = await UsersModel.findOneAndUpdate(
       {
         telegramFromId: ctx.from?.id ?? '',
@@ -1010,7 +1015,9 @@ export class TelegrafManager {
       ctx.replyWithMarkdownV2(notFoundMessage);
       return;
     }
-    ctx.replyWithMarkdownV2(escapeMarkdown('Started watching new blocks.'));
+    ctx.replyWithMarkdownV2(escapeMarkdown(
+      `Started watching new blocks. Best block height is: ${settings.bestBlockHeight}.`,
+    ));
   }
 
   static async [BotCommandName.UnwatchNewBlocks](ctx: TextContext) {

@@ -193,17 +193,20 @@ class BitcoindWatcher extends EventEmitter {
     }
   }
 
-  private async runSafe() {
+  private runSafe() {
     if (this.isRunning) {
       this.shouldRerun = true;
       return;
     }
     this.shouldRerun = false;
     this.isRunning = true;
+    this.run();
+  }
+
+  private async run() {
     try {
-      // the this.run...(...) functions should only be called here.
       if (this.transactionsToUnwatch.length > 0) {
-        logger.info('runSafe: New transactions to unwatch');
+        logger.info('run: New transactions to unwatch');
         this.shouldRerun = true;
         const unwatchTxid = this.transactionsToUnwatch.shift() as string;
         const unwatchAnalysis = this.transactionAnalyses.get(unwatchTxid);
@@ -216,7 +219,7 @@ class BitcoindWatcher extends EventEmitter {
           }
         }
       } else if (this.newTransactionsToWatch.length > 0) {
-        logger.info('runSafe: New transactions to watch');
+        logger.info('run: New transactions to watch');
         this.shouldRerun = true;
         const newTxid = this.newTransactionsToWatch.shift() as string;
         this.transactionPayloadsQueue = [];
@@ -240,7 +243,7 @@ class BitcoindWatcher extends EventEmitter {
           }
         }
       } else if (this.transactionsToReanalyze.length > 0) {
-        logger.info('runSafe: transactions to reanalyze');
+        logger.info('run: transactions to reanalyze');
         this.shouldRerun = true;
         const txid = this.transactionsToReanalyze.shift() as string;
         const oldAnalysis = this.transactionAnalyses.get(txid);
@@ -271,7 +274,7 @@ class BitcoindWatcher extends EventEmitter {
           }
         }
       } else if (this.checkNewBlock) {
-        logger.info('runSafe: new block');
+        logger.info('run: new block');
         this.shouldRerun = true;
         this.checkNewBlock = false;
         try {
@@ -312,7 +315,7 @@ class BitcoindWatcher extends EventEmitter {
           }
         }
         if (this.recheckMempoolTransactions.length === 0) {
-          logger.info('runSafe: finished last mempool transaction to check for conflicts');
+          logger.info('run: finished last mempool transaction to check for conflicts');
           this.checkMempoolConflictsAndIncomes = false;
           this.recheckMempoolTransactions = undefined;
         }
@@ -320,12 +323,12 @@ class BitcoindWatcher extends EventEmitter {
         this.shouldRerun = true;
         this.checkMempool = false;
         try {
-          logger.info('runSafe: getting raw mempool');
+          logger.info('run: getting raw mempool');
           const mempoolTransactions = await getRawMempool();
           if (mempoolTransactions) {
             const mempoolTransactionIds = Object.keys(mempoolTransactions);
             logger.info(
-              `runSafe: mempoolTransactions: ${mempoolTransactionIds.length}`,
+              `run: mempoolTransactions: ${mempoolTransactionIds.length}`,
             );
             if (this.checkMempoolConflictsAndIncomes) {
               // no need to check the transactions otherwise
@@ -336,7 +339,7 @@ class BitcoindWatcher extends EventEmitter {
               (soFar, { weight }) => soFar + weight,
               0,
             );
-            logger.info(`runSafe: new mempool weight: ${newMempoolWeight}`);
+            logger.info(`run: new mempool weight: ${newMempoolWeight}`);
             if (this.mempoolWeight !== undefined) {
               const wasClear = this.mempoolWeight < maxBlockWeight;
               const isClear = newMempoolWeight < maxBlockWeight;

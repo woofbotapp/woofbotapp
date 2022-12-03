@@ -294,6 +294,7 @@ class BitcoindWatcher extends EventEmitter {
           throw error;
         }
       } else if (this.recheckMempoolTransactions) {
+        logger.info('run: recheck mempool transaction');
         // Do not re-trigger immediately. Give some runtime to other parts of the app.
         this.delayedTriggerTimeout?.refresh();
         const recheckTxids = this.recheckMempoolTransactions.slice(0, rawTransactionsBatchSize);
@@ -357,7 +358,7 @@ class BitcoindWatcher extends EventEmitter {
         }
       }
     } catch (error) {
-      logger.error(`BitcoindWatcher: run failed ${errorString(error)}`);
+      logger.error(`run: failed ${errorString(error)}`);
       await new Promise((resolve) => {
         setTimeout(resolve, bitcoindWatcherErrorGraceMs);
       });

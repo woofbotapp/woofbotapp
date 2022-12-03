@@ -11,7 +11,7 @@ COPY "packages/${PACKAGE}/*.json" "./packages/${PACKAGE}/"
 ARG PACKAGE="server"
 COPY "packages/${PACKAGE}/*.json" "./packages/${PACKAGE}/"
 RUN yarn install --frozen-lockfile --network-timeout 600000
-RUN mkdir -p ./node_modules ./packages/common/node_modules ./packages/server/node_modules
+RUN mkdir -p ./node_modules ./packages/common/node_modules ./packages/server/node_modules ./logs
 
 ARG PACKAGE="common"
 COPY "packages/${PACKAGE}/." "./packages/${PACKAGE}/"

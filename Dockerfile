@@ -14,7 +14,7 @@ ARG PACKAGE="server"
 COPY "packages/${PACKAGE}/*.json" "./packages/${PACKAGE}/"
 RUN yarn install --production --frozen-lockfile --network-timeout 600000
 # Make sure that the directories exist so future COPY won't fail
-RUN mkdir -p ./node_modules ./packages/common/node_modules ./packages/client/node_modules ./packages/server/node_modules
+RUN mkdir -p ./node_modules ./packages/common/node_modules ./packages/client/node_modules ./packages/server/node_modules ./logs
 
 FROM dependencies_builder as builder
 

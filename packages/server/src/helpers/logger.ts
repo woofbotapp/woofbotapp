@@ -11,7 +11,16 @@ export const defaultLogFormat = format.combine(
 const logger = createLogger({
   level: (process.env.NODE_ENV === 'production') ? 'info' : 'debug',
   format: defaultLogFormat,
-  transports: [new transports.Console()],
+  transports: [
+    new transports.Console(),
+    ...process.env.SERVER_LOGS_FILEPATH ? [
+      new transports.File({
+        filename: process.env.SERVER_LOGS_FILEPATH,
+        maxsize: 10_000_000,
+        maxFiles: 2,
+      }),
+    ] : [],
+  ],
 });
 
 export default logger;

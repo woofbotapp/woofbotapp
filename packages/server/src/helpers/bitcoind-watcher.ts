@@ -205,9 +205,9 @@ class BitcoindWatcher extends EventEmitter {
 
   private async run() {
     try {
+      this.shouldRerun = true;
       if (this.transactionsToUnwatch.length > 0) {
         logger.info('run: New transactions to unwatch');
-        this.shouldRerun = true;
         const unwatchTxid = this.transactionsToUnwatch.shift() as string;
         const unwatchAnalysis = this.transactionAnalyses.get(unwatchTxid);
         this.transactionAnalyses.delete(unwatchTxid);
@@ -220,7 +220,6 @@ class BitcoindWatcher extends EventEmitter {
         }
       } else if (this.newTransactionsToWatch.length > 0) {
         logger.info('run: New transactions to watch');
-        this.shouldRerun = true;
         const newTxid = this.newTransactionsToWatch.shift() as string;
         this.transactionPayloadsQueue = [];
         try {
@@ -244,7 +243,6 @@ class BitcoindWatcher extends EventEmitter {
         }
       } else if (this.transactionsToReanalyze.length > 0) {
         logger.info('run: transactions to reanalyze');
-        this.shouldRerun = true;
         const txid = this.transactionsToReanalyze.shift() as string;
         const oldAnalysis = this.transactionAnalyses.get(txid);
         this.transactionPayloadsQueue = [];
@@ -275,7 +273,6 @@ class BitcoindWatcher extends EventEmitter {
         }
       } else if (this.checkNewBlock) {
         logger.info('run: new block');
-        this.shouldRerun = true;
         this.checkNewBlock = false;
         try {
           const bestBlockHash = await getBestBlockHash();
@@ -296,6 +293,7 @@ class BitcoindWatcher extends EventEmitter {
       } else if (this.recheckMempoolTransactions) {
         logger.info('run: recheck mempool transaction');
         // Do not re-trigger immediately. Give some runtime to other parts of the app.
+        this.shouldRerun = false;
         this.delayedTriggerTimeout?.refresh();
         const recheckTxids = this.recheckMempoolTransactions.slice(0, rawTransactionsBatchSize);
         const leftTxids = this.recheckMempoolTransactions.slice(rawTransactionsBatchSize);
@@ -321,7 +319,6 @@ class BitcoindWatcher extends EventEmitter {
           this.recheckMempoolTransactions = undefined;
         }
       } else if (this.checkMempool) {
-        this.shouldRerun = true;
         this.checkMempool = false;
         try {
           logger.info('run: getting raw mempool');
@@ -335,7 +332,6 @@ class BitcoindWatcher extends EventEmitter {
               // no need to check the transactions otherwise
               this.recheckMempoolTransactions = mempoolTransactionIds;
             }
-            this.shouldRerun = true;
             const newMempoolWeight = Object.values(mempoolTransactions).reduce(
               (soFar, { weight }) => soFar + weight,
               0,
@@ -356,6 +352,8 @@ class BitcoindWatcher extends EventEmitter {
           this.checkMempool = true;
           throw error;
         }
+      } else {
+        this.shouldRerun = false;
       }
     } catch (error) {
       logger.error(`run: failed ${errorString(error)}`);

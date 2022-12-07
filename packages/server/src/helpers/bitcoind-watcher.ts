@@ -1013,6 +1013,17 @@ class BitcoindWatcher extends EventEmitter {
   }
 
   countTasks(): number {
+    logger.info(`countTasks: ${JSON.stringify({
+      isRunning: this.isRunning,
+      shouldRerun: this.shouldRerun,
+      newTransactionsToWatch: this.newTransactionsToWatch.length,
+      transactionsToUnwatch: this.transactionsToUnwatch.length,
+      transactionsToReanalyze: this.transactionsToReanalyze.length,
+      transactionPayloadsQueue: this.transactionPayloadsQueue?.length ?? 0,
+      recheckMempoolTransactions: this.recheckMempoolTransactions?.length ?? 0,
+      checkNewBlock: this.checkNewBlock,
+      checkMempool: this.checkMempool,
+    })}`);
     return (
       this.newTransactionsToWatch.length + this.transactionsToUnwatch.length
       + this.transactionsToReanalyze.length + (this.transactionPayloadsQueue?.length ?? 0)

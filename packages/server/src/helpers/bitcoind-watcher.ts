@@ -640,11 +640,14 @@ class BitcoindWatcher extends EventEmitter {
     const newBlocks: BlockVerbosity2[] = [];
     let chainBlockhash = bestBlockHash;
     for (let count = 0; count < maxAnalyzedBlocks; count += 1) {
+      logger.info(`analyzeNewBlocks: getting parent block ${count} ${chainBlockhash}`);
       // eslint-disable-next-line no-await-in-loop
       const block = await getBlock(chainBlockhash);
       if (!block) {
+        logger.info('analyzeNewBlocks: could not get block');
         return false;
       }
+      logger.info(`analyzeNewBlocks: new block height is ${block.height}`);
       newBlocks.unshift(block);
       if (block.height === 0) {
         // Test chain?
@@ -656,8 +659,10 @@ class BitcoindWatcher extends EventEmitter {
       }
     }
     if (newBlocks.length === 0) {
+      logger.info('analyzeNewBlocks: no new blocks');
       return true;
     }
+    logger.info(`analyzeNewBlocks: new blocks: ${newBlocks.length}`);
     if (
       (newBlocks.length === maxAnalyzedBlocks)
       && !this.analyzedBlockHashes.includes(newBlocks[0].previousblockhash)
@@ -674,15 +679,20 @@ class BitcoindWatcher extends EventEmitter {
       }
       this.shouldRerun = true;
     }
+    logger.info('analyzeNewBlocks: mapping blocks transactions');
     const transactions = newBlocks.flatMap(
       (block) => block.tx.map((transaction): [BlockTransaction, BlockVerbosity2] => ([
         transaction,
         block,
       ])),
     );
+    logger.info(`analyzeNewBlocks: ${this.watchedAddresses.size} watched addresses`);
     if (this.watchedAddresses.size > 0) {
       await this.analyzeBlockSpendingAddresses(transactions, false);
     }
+    logger.info(`analyzeNewBlocks: updating transaction analyses with ${
+      transactions.length
+    } new transactions`);
     for (const [transaction, block] of transactions) {
       const oldAnalysis = this.transactionAnalyses.get(transaction.txid);
       if (!oldAnalysis) {
@@ -711,6 +721,7 @@ class BitcoindWatcher extends EventEmitter {
         },
       );
     }
+    logger.info('analyzeNewBlocks: checking transaction conflicts');
     for (const [transaction, block] of transactions) {
       this.checkTransactionConflicts(
         transaction.txid,
@@ -741,6 +752,7 @@ class BitcoindWatcher extends EventEmitter {
     logger.info(`analyzeNewBlocks: confirmedBlockHashes: ${confirmedBlockHashes.join(', ')}`);
 
     if (this.watchedAddresses.size > 0) {
+      logger.info('analyzeNewBlocks: analyzing confirmed transactions for watched addresses');
       const confirmedTransactions = await getBlockTransactions(confirmedBlockHashes);
       await this.analyzeBlockSpendingAddresses(confirmedTransactions, true);
       for (const [transaction, block] of confirmedTransactions) {
@@ -750,7 +762,9 @@ class BitcoindWatcher extends EventEmitter {
         }
       }
     }
-
+    logger.info(
+      'analyzeNewBlocks: updating transaction analyses with confirmed and detached blocks',
+    );
     for (const [txid, oldAnalysis] of [...this.transactionAnalyses]) {
       if (oldAnalysis.blockHashes.size === 0) {
         continue;
@@ -778,6 +792,7 @@ class BitcoindWatcher extends EventEmitter {
         this.shouldRerun = true;
       }
     }
+    logger.info('analyzeNewBlocks: analysis complete');
     return true; // analysis complete
   }
 

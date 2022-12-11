@@ -1,3 +1,4 @@
+import AbortController from 'abort-controller';
 import fetch from 'node-fetch';
 
 export interface ChainInfo {
@@ -194,80 +195,96 @@ interface RpcProperties {
   params?: unknown;
 }
 
+const abortTimeoutMs = 90_000;
+
 async function rpc<T>(properties: RpcProperties): Promise<T> {
-  const rpcId = Math.random().toString(36).substring(2);
-  const response = await fetch(
-    bitcoinRpcUrl,
-    {
-      ...bitcoinRpcHttpOptions,
-      body: JSON.stringify({
-        jsonrpc: '2.0',
-        id: rpcId,
-        method: properties.method,
-        params: properties.params,
-      }),
-    },
-  );
-  let responseJson: BitcoinRpcResponse<T>;
+  const abortController = new AbortController();
+  const abortTimeout = setTimeout(() => abortController.abort(), abortTimeoutMs);
   try {
-    responseJson = (await response.json()) as BitcoinRpcResponse<T>;
-  } catch (error) {
-    if (!response.ok) {
-      // ignore the analysis error
-      throw new Error('Bitcoin rpc failed to parse json and response not ok');
+    const rpcId = Math.random().toString(36).substring(2);
+    const response = await fetch(
+      bitcoinRpcUrl,
+      {
+        ...bitcoinRpcHttpOptions,
+        body: JSON.stringify({
+          jsonrpc: '2.0',
+          id: rpcId,
+          method: properties.method,
+          params: properties.params,
+        }),
+        signal: abortController.signal,
+      },
+    );
+    let responseJson: BitcoinRpcResponse<T>;
+    try {
+      responseJson = (await response.json()) as BitcoinRpcResponse<T>;
+    } catch (error) {
+      if (!response.ok) {
+        // ignore the analysis error
+        throw new Error('Bitcoin rpc failed to parse json and response not ok');
+      }
+      throw error;
     }
-    throw error;
+    if (responseJson.id !== rpcId) {
+      throw new Error('Unexpected bitcoin rpc response id');
+    }
+    if (responseJson.error) {
+      // It is strange that the status is ok but we have an error defined
+      throw new BitcoinRpcError(responseJson.error);
+    }
+    if (!response.ok) {
+      throw new Error('Bitcoin rpc response not ok');
+    }
+    return responseJson.result;
+  } finally {
+    clearTimeout(abortTimeout);
   }
-  if (responseJson.id !== rpcId) {
-    throw new Error('Unexpected bitcoin rpc response id');
-  }
-  if (responseJson.error) {
-    // It is strange that the status is ok but we have an error defined
-    throw new BitcoinRpcError(responseJson.error);
-  }
-  if (!response.ok) {
-    throw new Error('Bitcoin rpc response not ok');
-  }
-  return responseJson.result;
 }
 
 async function rpcBatch<T>(propertiesArray: RpcProperties[]): Promise<(BitcoinRpcError | T)[]> {
-  const rpcId = Math.random().toString(36).substring(2);
-  const response = await fetch(
-    bitcoinRpcUrl,
-    {
-      ...bitcoinRpcHttpOptions,
-      body: JSON.stringify(
-        propertiesArray.map(({ method, params }, index) => ({
-          jsonrpc: '2.0',
-          id: `${rpcId}:${index}`,
-          method,
-          params,
-        })),
-      ),
-    },
-  );
-  let responseJson: BitcoinRpcResponse<T>[];
+  const abortController = new AbortController();
+  const abortTimeout = setTimeout(() => abortController.abort(), abortTimeoutMs);
   try {
-    responseJson = (await response.json()) as BitcoinRpcResponse<T>[];
-    if (!Array.isArray(responseJson)) {
-      throw new Error('Bitcoin rpc batch response is not array');
+    const rpcId = Math.random().toString(36).substring(2);
+    const response = await fetch(
+      bitcoinRpcUrl,
+      {
+        ...bitcoinRpcHttpOptions,
+        body: JSON.stringify(
+          propertiesArray.map(({ method, params }, index) => ({
+            jsonrpc: '2.0',
+            id: `${rpcId}:${index}`,
+            method,
+            params,
+          })),
+        ),
+        signal: abortController.signal,
+      },
+    );
+    let responseJson: BitcoinRpcResponse<T>[];
+    try {
+      responseJson = (await response.json()) as BitcoinRpcResponse<T>[];
+      if (!Array.isArray(responseJson)) {
+        throw new Error('Bitcoin rpc batch response is not array');
+      }
+    } catch (error) {
+      if (!response.ok) {
+        // ignore the analysis error
+        throw new Error('Bitcoin rpc batch failed to parse json and response not ok');
+      }
+      throw error;
     }
-  } catch (error) {
-    if (!response.ok) {
-      // ignore the analysis error
-      throw new Error('Bitcoin rpc batch failed to parse json and response not ok');
+    if (responseJson.some(({ id }, index) => `${rpcId}:${index}` !== id)) {
+      throw new Error('Unexpected bitcoin rpc batch response id');
     }
-    throw error;
+    // ignore status code check - not sure what it should be if some of the responses
+    // have errors and some don't.
+    return responseJson.map((rpcResponse) => (
+      rpcResponse.error ? new BitcoinRpcError(rpcResponse.error) : rpcResponse.result
+    ));
+  } finally {
+    clearTimeout(abortTimeout);
   }
-  if (responseJson.some(({ id }, index) => `${rpcId}:${index}` !== id)) {
-    throw new Error('Unexpected bitcoin rpc batch response id');
-  }
-  // ignore status code check - not sure what it should be if some of the responses
-  // have errors and some don't.
-  return responseJson.map((rpcResponse) => (
-    rpcResponse.error ? new BitcoinRpcError(rpcResponse.error) : rpcResponse.result
-  ));
 }
 
 export async function getRawTransaction(txid: string): Promise<RawTransaction | undefined> {

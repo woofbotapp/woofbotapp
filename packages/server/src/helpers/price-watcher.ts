@@ -50,23 +50,26 @@ class PriceWatcher extends EventEmitter {
     logger.info('getPrice: getting Bitcoin price.');
     const abortController = new AbortController();
     const abortTimeout = setTimeout(() => abortController.abort(), priceCheckTimeoutMs);
-    const fetchResult = await fetch(
-      'https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd',
-      {
-        signal: abortController.signal,
-      },
-    );
-    clearTimeout(abortTimeout);
-    if (!fetchResult.ok) {
-      throw new Error('Bad response from CoinGecko server');
+    try {
+      const fetchResult = await fetch(
+        'https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd',
+        {
+          signal: abortController.signal,
+        },
+      );
+      if (!fetchResult.ok) {
+        throw new Error('Bad response from CoinGecko server');
+      }
+      const jsonResult: CoingeckoPriceApiJson = await fetchResult.json();
+      const price = jsonResult?.bitcoin?.usd;
+      if (typeof price !== 'number') {
+        throw new Error('Could not parse price');
+      }
+      logger.info(`getPrice: Bitcoin price is $${price}`);
+      return Math.round(price);
+    } finally {
+      clearTimeout(abortTimeout);
     }
-    const jsonResult: CoingeckoPriceApiJson = await fetchResult.json();
-    const price = jsonResult?.bitcoin?.usd;
-    if (typeof price !== 'number') {
-      throw new Error('Could not parse price');
-    }
-    logger.info(`getPrice: Bitcoin price is $${price}`);
-    return Math.round(price);
   }
 
   private static calculateThresholds(price: number, delta: number): [number, number] {

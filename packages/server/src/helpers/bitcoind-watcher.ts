@@ -71,6 +71,7 @@ const maxAnalyzedBlocks = 5;
 const bitcoindWatcherErrorGraceMs = 10_000;
 const majorRecheckIntervalMs = 60_000;
 const delayedTriggerTimeoutMs = 1;
+const newBlockDebounceTimeoutMs = 3_000;
 
 const startAttempts = 6;
 const startGraceMs = 20_000;
@@ -107,6 +108,8 @@ function txInStandardKey(parameters: Pick<TxInStandard, 'txid' | 'vout'>): strin
 
 class BitcoindWatcher extends EventEmitter {
   private delayedTriggerTimeout: ReturnType<typeof setTimeout> | undefined;
+
+  private newBlockDebounceTimeout: ReturnType<typeof setTimeout> | undefined;
 
   private recheckMempoolTransactions: string[] | undefined;
 
@@ -191,6 +194,17 @@ class BitcoindWatcher extends EventEmitter {
         ]),
       );
     }
+  }
+
+  private newBlockDebounce() {
+    if (!this.newBlockDebounceTimeout) {
+      this.newBlockDebounceTimeout = setTimeout(() => {
+        this.checkNewBlock = true;
+        this.delayedTriggerTimeout?.refresh();
+      }, newBlockDebounceTimeoutMs);
+      return;
+    }
+    this.newBlockDebounceTimeout.refresh();
   }
 
   private runSafe() {
@@ -514,8 +528,7 @@ class BitcoindWatcher extends EventEmitter {
     }
     const transaction = Transaction.fromBuffer(transactionPayload);
     if (transaction.isCoinbase()) {
-      this.checkNewBlock = true;
-      this.delayedTriggerTimeout?.refresh();
+      this.newBlockDebounce();
     }
     const txid = transaction.getId();
     const analysis = this.transactionAnalyses.get(txid);
@@ -872,7 +885,7 @@ class BitcoindWatcher extends EventEmitter {
         if (this.majorRecheckLastBestBlockHash !== newBestBlockHash) {
           if (this.majorRecheckLastBestBlockHash) {
             logger.info('majorRecheck: New block from major recheck');
-            this.checkNewBlock = true;
+            this.newBlockDebounce();
           }
           this.majorRecheckLastBestBlockHash = newBestBlockHash;
         }
@@ -950,8 +963,7 @@ class BitcoindWatcher extends EventEmitter {
         const messageType = String.fromCharCode(message[32] ?? 0);
         if (messageType === 'C') {
           logger.info('BitcoindWatcher: New block from zmq-sequence message');
-          this.checkNewBlock = true;
-          this.delayedTriggerTimeout?.refresh();
+          this.newBlockDebounce();
         }
       });
     }

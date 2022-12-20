@@ -2,11 +2,14 @@
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
     "module": "esnext",
+    "target": "es2015",
     "jsx": "react-jsx",
     "noEmit": true
   },
   "references": [
-    { "path": "../common" }
+    {
+      "path": "../common"
+    }
   ],
   "include": [
     "src"

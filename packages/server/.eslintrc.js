@@ -4,7 +4,7 @@ const commonEslint = require("../common/.eslintrc");
 
 module.exports = {
     "env": {
-        "es2021": true,
+        "es2022": true,
         "node": true
     },
     "extends": [
@@ -12,7 +12,7 @@ module.exports = {
     ],
     "parser": "@typescript-eslint/parser",
     "parserOptions": {
-        "ecmaVersion": 12,
+        "ecmaVersion": 13,
         "sourceType": "module"
     },
     "plugins": [

@@ -1,6 +1,4 @@
 import { EventEmitter } from 'stream';
-import fetch from 'node-fetch';
-import AbortController from 'abort-controller';
 
 import logger from './logger';
 import { errorString } from './error';

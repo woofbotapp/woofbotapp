@@ -1,4 +1,4 @@
-FROM node:16.15.0-bullseye-slim as dependencies_builder
+FROM node:18.12.1-bullseye-slim as dependencies_builder
 
 WORKDIR /app
 # For node-gyp
@@ -31,7 +31,7 @@ RUN yarn server build
 # No need for dependencies anymore
 RUN rm -rf ./node_modules ./packages/common/node_modules ./packages/client/node_modules ./packages/server/node_modules
 
-FROM node:16.15.0-bullseye-slim
+FROM node:18.12.1-bullseye-slim
 
 WORKDIR /app
 RUN chown -R node:node .

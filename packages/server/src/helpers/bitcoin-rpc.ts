@@ -1,6 +1,3 @@
-import AbortController from 'abort-controller';
-import fetch from 'node-fetch';
-
 export interface ChainInfo {
   chain: string
   blocks: number

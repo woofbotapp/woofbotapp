@@ -27,7 +27,8 @@ export default function Login() {
   const tryPasswordlessLogin = async () => {
     try {
       const response = await api.post<PasswordlessLoginResponse>(
-        apiRoutes.authTryPasswordlessLogin, {},
+        apiRoutes.authTryPasswordlessLogin,
+        {},
       );
       setShowBackendErrorMessage(false);
       if (!response.ok) {

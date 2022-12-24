@@ -33,7 +33,7 @@ function WatchedAddressRow({
   watchedAddressAttributes,
 }: WatchedAddressRowProperties) {
   if (!watchedAddressAttributes) {
-    return (<></>);
+    return null;
   }
   return (
     <>
@@ -75,7 +75,7 @@ function WatchedTransactionRow({
   watchedTransactionAttributes,
 }: WatchedTransactionRowProperties) {
   if (!watchedTransactionAttributes) {
-    return (<></>);
+    return null;
   }
   const blockHashes = watchedTransactionAttributes.blockHashes ?? [];
   const conflictingTransactions = watchedTransactionAttributes.conflictingTransactions ?? [];

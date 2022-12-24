@@ -1,4 +1,3 @@
-import { ReactText } from 'react';
 import { toast, ToastContent, ToastOptions } from 'react-toastify';
 
 const defaultToastOptions = {
@@ -7,16 +6,18 @@ const defaultToastOptions = {
 };
 
 export const errorToast = (
-  content: ToastContent, options?: ToastOptions<{}>,
-): ReactText => toast.error(content, {
+  content: ToastContent,
+  options?: ToastOptions<{}>,
+) => toast.error(content, {
   ...defaultToastOptions,
   autoClose: 4000,
   ...options,
 });
 
 export const successToast = (
-  content: ToastContent, options?: ToastOptions<{}>,
-): ReactText => toast.success(content, {
+  content: ToastContent,
+  options?: ToastOptions<{}>,
+) => toast.success(content, {
   ...defaultToastOptions,
   autoClose: 2000,
   ...options,

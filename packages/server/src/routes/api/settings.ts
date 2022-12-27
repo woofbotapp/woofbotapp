@@ -1,6 +1,6 @@
-import expressAsyncHandler from 'express-async-handler';
 import Router from 'express';
 
+import { asyncHandler } from '../../helpers/express';
 import { SettingsModel } from '../../models/settings';
 import { bitcoindWatcher } from '../../helpers/bitcoind-watcher';
 import { isSafeNonNegativeInteger, isShortString } from '../../helpers/validations';
@@ -10,7 +10,7 @@ import { UsersModel } from '../../models/users';
 
 const apiSettingsRouter = Router();
 
-apiSettingsRouter.get('/general', expressAsyncHandler(async (req, res) => {
+apiSettingsRouter.get('/general', asyncHandler(async (req, res) => {
   const settings = await SettingsModel.findById(zeroObjectId);
   if (!settings) {
     throw new Error('Could not find settings document');
@@ -24,7 +24,7 @@ apiSettingsRouter.get('/general', expressAsyncHandler(async (req, res) => {
   });
 }));
 
-apiSettingsRouter.post('/general', expressAsyncHandler(async (req, res) => {
+apiSettingsRouter.post('/general', asyncHandler(async (req, res) => {
   // No patches - just replace all.
   const { maxUsers } = req.body ?? {};
   if (
@@ -48,7 +48,7 @@ apiSettingsRouter.post('/general', expressAsyncHandler(async (req, res) => {
   });
 }));
 
-apiSettingsRouter.get('/telegram', expressAsyncHandler(async (req, res) => {
+apiSettingsRouter.get('/telegram', asyncHandler(async (req, res) => {
   const numberOfUsers = await UsersModel.countDocuments({});
   const botInfo = telegramManager.bot?.botInfo;
   res.json({
@@ -63,7 +63,7 @@ apiSettingsRouter.get('/telegram', expressAsyncHandler(async (req, res) => {
 
 let telegramPostLock = false;
 
-apiSettingsRouter.post('/telegram', expressAsyncHandler(async (req, res) => {
+apiSettingsRouter.post('/telegram', asyncHandler(async (req, res) => {
   if (telegramPostLock) {
     res.status(409).json({
       error: 'Concurrency attempts to change the telegram settings',

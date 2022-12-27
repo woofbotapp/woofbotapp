@@ -1,8 +1,8 @@
 import Router, { json as expressJson } from 'express';
 import expressWinston from 'express-winston';
-import expressAsyncHandler from 'express-async-handler';
 import winston from 'winston';
 
+import { asyncHandler } from '../../helpers/express';
 import logger, { defaultLogFormat } from '../../helpers/logger';
 import { verifyAuthToken } from '../../models/refresh-tokens';
 import apiAuthRouter from './auth';
@@ -31,7 +31,7 @@ apiRouter.use(expressJson({
 
 apiRouter.use('/auth', apiAuthRouter);
 
-apiRouter.use(expressAsyncHandler(async (req, res, next) => {
+apiRouter.use(asyncHandler(async (req, res, next) => {
   const authorizationHeader = req.get('authorization');
   if (!authorizationHeader) {
     res.status(401).json({
@@ -61,7 +61,7 @@ apiRouter.use(expressAsyncHandler(async (req, res, next) => {
 
 apiRouter.use('/auth/logout', apiAuthLogoutRouter);
 
-apiRouter.get('/ping', expressAsyncHandler(async (req, res) => {
+apiRouter.get('/ping', asyncHandler(async (req, res) => {
   res.json({
     ok: true,
   });
@@ -69,7 +69,7 @@ apiRouter.get('/ping', expressAsyncHandler(async (req, res) => {
 
 apiRouter.use('/settings', apiSettingsRouter);
 
-apiRouter.get('/stats', expressAsyncHandler(async (req, res) => {
+apiRouter.get('/stats', asyncHandler(async (req, res) => {
   res.json({
     rebootAt,
   });
@@ -88,7 +88,7 @@ apiRouter.use(expressWinston.errorLogger({
     new winston.transports.Console(),
   ],
   format: defaultLogFormat,
-}));
+}) as (...args: unknown[]) => void); // typescript problems
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 apiRouter.use((err, _req, res, _next) => {

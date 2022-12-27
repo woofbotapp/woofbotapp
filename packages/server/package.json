@@ -21,7 +21,6 @@
     "bitcoin-address-validation": "^2.2.1",
     "bitcoinjs-lib": "^6.1.0",
     "express": "^4.18.2",
-    "express-async-handler": "^1.2.0",
     "express-winston": "^4.2.0",
     "helmet": "^6.0.1",
     "jsonwebtoken": "^9.0.0",

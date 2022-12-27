@@ -1,7 +1,7 @@
-import expressAsyncHandler from 'express-async-handler';
 import Router from 'express';
 import { Types } from 'mongoose';
 
+import { asyncHandler } from '../../helpers/express';
 import { UsersModel } from '../../models/users';
 import { WatchedAddressesModel } from '../../models/watched-addresses';
 import { WatchedTransactionsModel } from '../../models/watched-transactions';
@@ -26,7 +26,7 @@ const listAttributes = [
 
 const apiUsersRouter = Router();
 
-apiUsersRouter.get('/', expressAsyncHandler(async (req, res) => {
+apiUsersRouter.get('/', asyncHandler(async (req, res) => {
   const { page } = req.query;
   if (
     !page
@@ -107,7 +107,7 @@ apiUsersRouter.get('/', expressAsyncHandler(async (req, res) => {
   });
 }));
 
-apiUsersRouter.delete('/:userId([0-9a-f]{24})', expressAsyncHandler(async (req, res) => {
+apiUsersRouter.delete('/:userId([0-9a-f]{24})', asyncHandler(async (req, res) => {
   const user = await deleteUser({
     _id: new Types.ObjectId(req.params.userId),
   });
@@ -128,7 +128,7 @@ apiUsersRouter.delete('/:userId([0-9a-f]{24})', expressAsyncHandler(async (req, 
   res.json({ ok: true });
 }));
 
-apiUsersRouter.get('/:userId([0-9a-f]{24})', expressAsyncHandler(async (req, res) => {
+apiUsersRouter.get('/:userId([0-9a-f]{24})', asyncHandler(async (req, res) => {
   const user = await UsersModel.findOne({
     _id: new Types.ObjectId(req.params.userId),
   });

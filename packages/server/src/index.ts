@@ -54,7 +54,7 @@ app.use(expressWinston.logger({
   ],
   format: defaultLogFormat,
   expressFormat: true,
-}));
+}) as (...args: unknown[]) => void); // typescript problems
 
 // Serve static resources from the "public" folder (ex: when there are images to display)
 app.use(express.static(join(__dirname, clientPath)));
@@ -75,7 +75,7 @@ app.use(expressWinston.errorLogger({
     new winston.transports.Console(),
   ],
   format: defaultLogFormat,
-}));
+}) as (...args: unknown[]) => void); // typescript problems
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 app.use((err, _req, res, _next) => {

@@ -654,6 +654,7 @@ export class TelegrafManager {
         logger.error('TelegrafManager: Message queue handler could not find settings');
         return;
       }
+      logger.info(`TelegrafManager: Got settings, internal status is ${this.internalStatus}`);
       if (settings.telegramToken && (this.internalStatus !== TelegramStatus.Loading)) {
         await this.startBot(settings.telegramToken);
       }
@@ -917,12 +918,14 @@ export class TelegrafManager {
           );
         }
       });
-      await bot.launch({
-        dropPendingUpdates: true,
-      });
+      logger.info('TelegrafManager: settings commands');
       await bot.telegram.setMyCommands(
         telegramCommands.map(({ command, description }) => ({ command, description })),
       );
+      logger.info('TelegrafManager: starting launch');
+      bot.launch({
+        dropPendingUpdates: true,
+      });
       this.internalBot = bot;
       this.internalStatus = TelegramStatus.Running;
     } catch (error) {

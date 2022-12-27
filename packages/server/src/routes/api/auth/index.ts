@@ -1,9 +1,9 @@
 import {
   scrypt, ScryptOptions, timingSafeEqual, randomBytes, createHash,
 } from 'crypto';
-import expressAsyncHandler from 'express-async-handler';
 import Router from 'express';
 
+import { asyncHandler } from '../../../helpers/express';
 import { zeroObjectId } from '../../../helpers/mongo';
 import { SettingsModel } from '../../../models/settings';
 import { createTokensPair, RefreshTokensModel } from '../../../models/refresh-tokens';
@@ -90,7 +90,7 @@ const verifyPassword = async (password: string) => {
 let lastLoginFail = new Date(0);
 const loginSafetyGapMs = 3000;
 
-apiAuthRouter.post('/try-passwordless-login', expressAsyncHandler(async (req, res) => {
+apiAuthRouter.post('/try-passwordless-login', asyncHandler(async (req, res) => {
   if (await hasPassword()) {
     res.json({ ok: false });
     return;
@@ -101,7 +101,7 @@ apiAuthRouter.post('/try-passwordless-login', expressAsyncHandler(async (req, re
   });
 }));
 
-apiAuthRouter.post('/login', expressAsyncHandler(async (req, res) => {
+apiAuthRouter.post('/login', asyncHandler(async (req, res) => {
   if (typeof req.body?.password !== 'string') {
     res.status(400).json({
       error: 'Invalid body',
@@ -125,7 +125,7 @@ apiAuthRouter.post('/login', expressAsyncHandler(async (req, res) => {
   res.json(await createTokensPair());
 }));
 
-apiAuthRouter.post('/refresh-token', expressAsyncHandler(async (req, res) => {
+apiAuthRouter.post('/refresh-token', asyncHandler(async (req, res) => {
   if (typeof req.body?.refreshToken !== 'string') {
     res.status(400).json({
       error: 'Invalid body',
@@ -171,7 +171,7 @@ async function generatePasswordHash(password: string): Promise<string> {
   ].join('$');
 }
 
-apiAuthRouter.post('/change-password', expressAsyncHandler(async (req, res) => {
+apiAuthRouter.post('/change-password', asyncHandler(async (req, res) => {
   if (
     (typeof req.body?.oldPassword !== 'string')
     || (typeof req.body?.newPassword !== 'string')

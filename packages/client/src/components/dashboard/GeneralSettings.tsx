@@ -75,6 +75,7 @@ export default function GeneralSettings() {
           <Button
             variant="outlined"
             onClick={openEditing}
+            sx={{ mt: 1 }}
           >
             Edit
           </Button>

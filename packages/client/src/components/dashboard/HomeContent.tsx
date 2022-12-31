@@ -12,38 +12,42 @@ export default function HomeContent() {
   return (
     <>
       <Grid container spacing={3}>
-        <Grid item xs={12} md={6} lg={6}>
+        <Grid xs={0} md={1} lg={1} />
+        <Grid item xs={12} md={10} lg={10}>
           <Paper
             sx={{
               p: 2,
               display: 'flex',
               flexDirection: 'column',
-              minHeight: 260,
             }}
           >
             <Title>Telegram Settings</Title>
             <TelegramSettings />
           </Paper>
         </Grid>
-        <Grid item xs={12} md={6} lg={6}>
+        <Grid xs={0} md={1} lg={1} />
+        <Grid xs={0} md={1} lg={1} />
+        <Grid item xs={12} md={10} lg={10}>
           <Paper
             sx={{
               p: 2,
               display: 'flex',
               flexDirection: 'column',
-              minHeight: 260,
             }}
           >
             <Title>General Settings and Stats</Title>
             <GeneralSettings />
           </Paper>
         </Grid>
-        <Grid item xs={12}>
+        <Grid xs={0} md={1} lg={1} />
+        <Grid xs={0} md={1} lg={1} />
+        <Grid item xs={12} md={10} lg={10}>
           <Paper sx={{ p: 2, display: 'flex', flexDirection: 'column' }}>
             <Title>Commands</Title>
             <Commands />
           </Paper>
         </Grid>
+        <Grid xs={0} md={1} lg={1} />
       </Grid>
       <Copyright />
     </>

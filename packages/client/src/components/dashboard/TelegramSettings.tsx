@@ -144,7 +144,7 @@ export default function TelegramSettings() {
               )
             }
           </Typography>
-          <Box>
+          <Box sx={{ mt: 1 }}>
             <Button
               variant="outlined"
               onClick={handleChangeTokenClicked}
@@ -160,9 +160,12 @@ export default function TelegramSettings() {
         >
           <Typography variant="body2" color="warning.main">
             It seems that there are existing users in your database.
+            <br />
             If you are only updating the token of an existing bot, that&apos;s ok.
+            <br />
             If you are switching to a new bot, please remove all existing users first.
-            Continue?
+            <br />
+            Continue without removing users?
           </Typography>
           <Box flexDirection="row" sx={{ mt: 1 }}>
             <Button

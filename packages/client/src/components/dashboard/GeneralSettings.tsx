@@ -25,8 +25,9 @@ export default function GeneralSettings() {
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const formData = new FormData(event.currentTarget);
-    const maxUsers = Number(formData.get('maxUsers'));
-    if (!Number.isSafeInteger(maxUsers) || (maxUsers < 0)) {
+    const maxUsersString = formData.get('maxUsers');
+    const maxUsers = maxUsersString ? Number(maxUsersString) : undefined;
+    if ((maxUsers === undefined) || !Number.isSafeInteger(maxUsers) || (maxUsers < 0)) {
       errorToast('Max-Users must be a safe non-negative integer');
       return;
     }
@@ -50,7 +51,7 @@ export default function GeneralSettings() {
         <Typography component="p">
           Max number of users:
           {' '}
-          {data.maxUsers}
+          {data.maxUsers ?? 'unlimited'}
         </Typography>
         <Typography component="p">
           Best block height:
@@ -98,7 +99,7 @@ export default function GeneralSettings() {
     >
       <Box sx={{ flex: 1 }}>
         <TextField
-          defaultValue={data.maxUsers}
+          defaultValue={`${data.maxUsers ?? ''}`}
           required
           margin="dense"
           name="maxUsers"
@@ -106,8 +107,8 @@ export default function GeneralSettings() {
           type="number"
           id="maxUsers"
           disabled={isMutationLoading}
-          fullWidth
           helperText={maxUsersTextFieldHelper}
+          sx={{ maxWidth: 420 }}
         />
       </Box>
       <Box>

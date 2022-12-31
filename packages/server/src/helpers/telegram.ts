@@ -736,7 +736,7 @@ export class TelegrafManager {
             throw new Error('Settings not found');
           }
           const usersCount = await UsersModel.countDocuments();
-          const canInsert = (usersCount < settings.maxUsers);
+          const canInsert = (settings.maxUsers !== undefined) && (usersCount < settings.maxUsers);
           const found = await UsersModel.findOneAndUpdate(
             {
               telegramFromId: ctx.from.id,

@@ -44,7 +44,7 @@ export const useMutationSettingsTelegram = () => {
 };
 
 export interface GeneralSettingsInterface {
-  maxUsers: number;
+  maxUsers?: number;
   bestBlockHeight: number;
   bestBlockId: string;
   bitcoindWatcherTasks: number;
@@ -57,7 +57,7 @@ export const useGetSettingsGeneral = () => useAuthQuery<GeneralSettingsInterface
 );
 
 interface GeneralSettingsMutation {
-  maxUsers: number;
+  maxUsers?: number;
 }
 
 export const useMutationSettingsGeneral = () => {

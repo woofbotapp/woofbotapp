@@ -139,7 +139,8 @@ export default function TelegramSettings() {
             {' '}
             {data.numberOfUsers}
             {
-              (data.numberOfUsers >= generalSettings.maxUsers) && (
+              (generalSettings.maxUsers !== undefined)
+              && (data.numberOfUsers >= generalSettings.maxUsers) && (
                 ' - max-users was reached'
               )
             }

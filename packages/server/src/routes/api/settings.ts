@@ -27,9 +27,7 @@ apiSettingsRouter.get('/general', asyncHandler(async (req, res) => {
 apiSettingsRouter.post('/general', asyncHandler(async (req, res) => {
   // No patches - just replace all.
   const { maxUsers } = req.body ?? {};
-  if (
-    !isSafeNonNegativeInteger(maxUsers)
-  ) {
+  if (!isSafeNonNegativeInteger(maxUsers)) {
     res.status(400).json({
       error: 'Invalid body',
     });
@@ -37,7 +35,11 @@ apiSettingsRouter.post('/general', asyncHandler(async (req, res) => {
   }
   await SettingsModel.updateOne(
     { _id: zeroObjectId },
-    {
+    (maxUsers === undefined) ? {
+      $unset: {
+        maxUsers: 1,
+      },
+    } : {
       $set: {
         maxUsers,
       },

@@ -7,6 +7,7 @@ interface SettingsFields {
   adminPasswordHash?: string;
   telegramToken?: string;
   maxUsers?: number;
+  usersWhitelist?: string[];
   bestBlockHeight: number;
   analyzedBlockHashes: string[];
 }
@@ -16,6 +17,7 @@ const schema = new Schema<SettingsFields & TimeFields>({
   adminPasswordHash: { type: String, required: false },
   telegramToken: { type: String, required: false },
   maxUsers: { type: Number, required: false },
+  usersWhitelist: { type: [String], required: false, default: undefined },
   bestBlockHeight: { type: Number, required: true },
   analyzedBlockHashes: { type: [String], required: false },
 }, { timestamps: true });

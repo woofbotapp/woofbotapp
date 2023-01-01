@@ -17,6 +17,7 @@ apiSettingsRouter.get('/general', asyncHandler(async (req, res) => {
   }
   res.json({
     maxUsers: settings.maxUsers,
+    usersWhitelist: settings.usersWhitelist,
     bestBlockHeight: settings.bestBlockHeight,
     bestBlockId: settings.analyzedBlockHashes.slice(-1)[0] ?? '',
     bitcoindWatcherTasks: bitcoindWatcher.countTasks(),
@@ -26,22 +27,48 @@ apiSettingsRouter.get('/general', asyncHandler(async (req, res) => {
 
 apiSettingsRouter.post('/general', asyncHandler(async (req, res) => {
   // No patches - just replace all.
-  const { maxUsers } = req.body ?? {};
-  if (!isSafeNonNegativeInteger(maxUsers)) {
+  const { maxUsers, usersWhitelist } = req.body ?? {};
+  if (maxUsers !== undefined) {
+    if (usersWhitelist !== undefined) {
+      res.status(400).json({
+        error: 'Only one of usersWhitelist, maxUsers should be defined.',
+      });
+      return;
+    }
+    if (!isSafeNonNegativeInteger(maxUsers)) {
+      res.status(400).json({
+        error: 'maxUsers should be a safe non-negative integer.',
+      });
+      return;
+    }
+  } else if (usersWhitelist !== undefined) {
+    if (!Array.isArray(usersWhitelist) || (usersWhitelist.length > 100)
+      || (new Set(usersWhitelist).size !== usersWhitelist.length)
+      || usersWhitelist.some((
+        user: string,
+      ) => (typeof user !== 'string') || (user.length === 0) || (user.length > 100))
+    ) {
+      res.status(400).json({
+        error: 'Invalid usersWhitelist, must be an array of strings up to 100 elements.',
+      });
+      return;
+    }
+  } else {
     res.status(400).json({
-      error: 'Invalid body',
+      error: 'At least one of usersWhitelist, maxUsers should be defined.',
     });
     return;
   }
   await SettingsModel.updateOne(
     { _id: zeroObjectId },
-    (maxUsers === undefined) ? {
-      $unset: {
-        maxUsers: 1,
-      },
-    } : {
+    {
       $set: {
-        maxUsers,
+        ...(maxUsers !== undefined) && { maxUsers },
+        ...(usersWhitelist !== undefined) && { usersWhitelist },
+      },
+      $unset: {
+        ...(maxUsers === undefined) && { maxUsers: 1 },
+        ...(usersWhitelist === undefined) && { usersWhitelist: 1 },
       },
     },
   );

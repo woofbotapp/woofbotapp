@@ -736,7 +736,14 @@ export class TelegrafManager {
             throw new Error('Settings not found');
           }
           const usersCount = await UsersModel.countDocuments();
-          const canInsert = (settings.maxUsers !== undefined) && (usersCount < settings.maxUsers);
+          const telegramUsername = ctx.from.username ?? '';
+          const canInsert = (
+            (settings.maxUsers === undefined) || (usersCount < settings.maxUsers)
+          ) && (
+            (settings.usersWhitelist === undefined) || settings.usersWhitelist.includes(
+              telegramUsername,
+            )
+          );
           const found = await UsersModel.findOneAndUpdate(
             {
               telegramFromId: ctx.from.id,
@@ -744,7 +751,7 @@ export class TelegrafManager {
             {
               $set: {
                 telegramChatId: ctx.chat.id,
-                telegramUsername: ctx.from.username ?? '',
+                telegramUsername,
               },
               $setOnInsert: {
                 ...defaultUserProperties,
@@ -762,10 +769,23 @@ export class TelegrafManager {
           }
           if (!canInsert) {
             ctx.replyWithMarkdownV2(escapeMarkdown([
-              'The number of users has already reached the maximum.',
-              'Please contact the bot administrator.',
+              'You are restricted from accessing this bot.',
+              'Please contact the bot administrator and ask to be added to the users whitelist',
+              'or to increase the maximal number of users that the bot is allowed to support.',
             ].join(' ')));
             return;
+          }
+          if (settings.usersWhitelist) {
+            await SettingsModel.updateOne(
+              {
+                _id: zeroObjectId,
+              },
+              {
+                $pull: {
+                  usersWhitelist: telegramUsername,
+                },
+              },
+            );
           }
           await ctx.replyWithMarkdownV2(startMessage);
         } catch (error) {

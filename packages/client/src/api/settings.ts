@@ -43,22 +43,41 @@ export const useMutationSettingsTelegram = () => {
   return mutation;
 };
 
-export interface GeneralSettingsInterface {
-  maxUsers?: number;
+interface WithMaxUsers {
+  maxUsers: number;
+  usersWhitelist: undefined;
+}
+
+interface WithUsersWhitelist {
+  maxUsers: undefined;
+  usersWhitelist: string[];
+}
+
+interface GeneralSettingsRequiredFields {
   bestBlockHeight: number;
   bestBlockId: string;
   bitcoindWatcherTasks: number;
   mempoolWeight: number;
 }
 
+export type GeneralSettingsInterface = GeneralSettingsRequiredFields & (
+  WithMaxUsers | WithUsersWhitelist
+)
+
 export const useGetSettingsGeneral = () => useAuthQuery<GeneralSettingsInterface>(
   apiRoutes.settingsGeneral,
   () => api.get(apiRoutes.settingsGeneral),
 );
 
-interface GeneralSettingsMutation {
-  maxUsers?: number;
+interface MaxUsersMutation {
+  maxUsers: number;
 }
+
+interface UsersWhitelistMutation {
+  usersWhitelist: string[];
+}
+
+type GeneralSettingsMutation = MaxUsersMutation | UsersWhitelistMutation
 
 export const useMutationSettingsGeneral = () => {
   const queryClient = useQueryClient();

@@ -131,7 +131,7 @@ app.use((err, _req, res, _next) => {
     },
   ]));
   await bitcoindWatcher.start(
-    settings.analyzedBlockHashes ?? [],
+    settings.analyzedBlockHashes,
     [...analysisByTxid.entries()],
     [...new Set(watchedAddresses.map(({ address }) => address))],
   );

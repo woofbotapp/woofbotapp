@@ -20,6 +20,21 @@ async function migrateV0(): Promise<void> {
   logger.info('migrateV0: finished');
 }
 
+async function migrateV1(): Promise<void> {
+  logger.info('migrateV1: started');
+  await SettingsModel.updateOne(
+    {
+      _id: zeroObjectId,
+    },
+    {
+      $set: {
+        mempoolUrlPrefix: 'https://mempool.space',
+      },
+    },
+  );
+  logger.info('migrateV1: finished');
+}
+
 export async function migrate(): Promise<void> {
   logger.info('migrate: started');
   const settings = await SettingsModel.findById(zeroObjectId);
@@ -33,6 +48,17 @@ export async function migrate(): Promise<void> {
       {
         $set: {
           migrationVersion: 1,
+        },
+      },
+    );
+  }
+  if (settings.migrationVersion < 2) {
+    await migrateV1();
+    await SettingsModel.updateOne(
+      { _id: zeroObjectId },
+      {
+        $set: {
+          migrationVersion: 2,
         },
       },
     );

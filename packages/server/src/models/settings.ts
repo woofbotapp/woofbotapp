@@ -19,7 +19,7 @@ const schema = new Schema<SettingsFields & TimeFields>({
   maxUsers: { type: Number, required: false },
   usersWhitelist: { type: [String], required: false, default: undefined },
   bestBlockHeight: { type: Number, required: true },
-  analyzedBlockHashes: { type: [String], required: false },
+  analyzedBlockHashes: { type: [String], required: true },
 }, { timestamps: true });
 
 export const defaultSettings: SettingsFields = {

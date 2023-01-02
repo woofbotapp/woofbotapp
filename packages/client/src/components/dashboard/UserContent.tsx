@@ -18,6 +18,7 @@ import { pageRoutes } from '../../routes';
 import Copyright from '../copyright/Copyright';
 import Title from './Title';
 import ExternalLink from '../external-link/ExternalLink';
+import { useGetSettingsGeneral } from '../../api/settings';
 
 const emptyTableCell = (
   <Typography component="span" variant="body2" color="text.secondary">
@@ -27,10 +28,12 @@ const emptyTableCell = (
 
 interface WatchedAddressRowProperties {
   watchedAddressAttributes?: WatchedAddressAttributes;
+  mempoolUrlPrefix?: string;
 }
 
 function WatchedAddressRow({
   watchedAddressAttributes,
+  mempoolUrlPrefix,
 }: WatchedAddressRowProperties) {
   if (!watchedAddressAttributes) {
     return null;
@@ -40,7 +43,7 @@ function WatchedAddressRow({
       <TableCell sx={{ wordBreak: 'break-all' }}>
         <ExternalLink
           href={
-            `https://mempool.space/address/${
+            `${mempoolUrlPrefix}/address/${
               encodeURIComponent(watchedAddressAttributes.address)
             }`
           }
@@ -69,10 +72,12 @@ WatchedAddressRow.defaultProps = {
 
 interface WatchedTransactionRowProperties {
   watchedTransactionAttributes?: WatchedTransactionAttributes;
+  mempoolUrlPrefix: string;
 }
 
 function WatchedTransactionRow({
   watchedTransactionAttributes,
+  mempoolUrlPrefix,
 }: WatchedTransactionRowProperties) {
   if (!watchedTransactionAttributes) {
     return null;
@@ -84,7 +89,7 @@ function WatchedTransactionRow({
       <TableCell sx={{ wordBreak: 'break-all' }}>
         <ExternalLink
           href={
-            `https://mempool.space/tx/${encodeURIComponent(watchedTransactionAttributes.txid)}`
+            `${mempoolUrlPrefix}/tx/${encodeURIComponent(watchedTransactionAttributes.txid)}`
           }
         >
           {watchedTransactionAttributes.txid}
@@ -107,7 +112,7 @@ function WatchedTransactionRow({
             <>
               <ExternalLink
                 key={blockHash}
-                href={`https://mempool.space/block/${encodeURIComponent(blockHash)}`}
+                href={`${mempoolUrlPrefix}/block/${encodeURIComponent(blockHash)}`}
               >
                 {blockHash}
               </ExternalLink>
@@ -130,7 +135,7 @@ function WatchedTransactionRow({
             <>
               <ExternalLink
                 key={conflictingTransaction}
-                href={`https://mempool.space/tx/${encodeURIComponent(conflictingTransaction)}`}
+                href={`${mempoolUrlPrefix}/tx/${encodeURIComponent(conflictingTransaction)}`}
               >
                 {conflictingTransaction}
               </ExternalLink>
@@ -165,6 +170,7 @@ function UserContentByUserId({
   const {
     data, error,
   } = useUser(userId);
+  const { data: generalSettings } = useGetSettingsGeneral();
   useEffect(() => {
     if (!error) {
       return;
@@ -334,6 +340,7 @@ function UserContentByUserId({
                                   watchedAddressAttributes={
                                     watchedAddresses?.get(watchedAddress.id)
                                   }
+                                  mempoolUrlPrefix={generalSettings?.mempoolUrlPrefix ?? ''}
                                 />
                               </TableRow>
                             ))
@@ -384,6 +391,7 @@ function UserContentByUserId({
                                     watchedTransactionAttributes={
                                       watchedTransactions?.get(watchedTransaction.id)
                                     }
+                                    mempoolUrlPrefix={generalSettings?.mempoolUrlPrefix ?? ''}
                                   />
                                 </TableRow>
                               ),

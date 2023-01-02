@@ -10,6 +10,7 @@ interface SettingsFields {
   usersWhitelist?: string[];
   bestBlockHeight: number;
   analyzedBlockHashes: string[];
+  mempoolUrlPrefix: string;
 }
 
 const schema = new Schema<SettingsFields & TimeFields>({
@@ -20,6 +21,7 @@ const schema = new Schema<SettingsFields & TimeFields>({
   usersWhitelist: { type: [String], required: false, default: undefined },
   bestBlockHeight: { type: Number, required: true },
   analyzedBlockHashes: { type: [String], required: true },
+  mempoolUrlPrefix: { type: String, required: true },
 }, { timestamps: true });
 
 export const defaultSettings: SettingsFields = {
@@ -27,6 +29,7 @@ export const defaultSettings: SettingsFields = {
   maxUsers: 10,
   bestBlockHeight: 0,
   analyzedBlockHashes: [],
+  mempoolUrlPrefix: 'https://mempool.space',
 };
 
 export const SettingsModel = model('settings', schema);

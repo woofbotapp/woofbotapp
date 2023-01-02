@@ -22,12 +22,13 @@ apiSettingsRouter.get('/general', asyncHandler(async (req, res) => {
     bestBlockId: settings.analyzedBlockHashes.slice(-1)[0] ?? '',
     bitcoindWatcherTasks: bitcoindWatcher.countTasks(),
     mempoolWeight: bitcoindWatcher.getMempoolWeight(),
+    mempoolUrlPrefix: settings.mempoolUrlPrefix,
   });
 }));
 
 apiSettingsRouter.post('/general', asyncHandler(async (req, res) => {
   // No patches - just replace all.
-  const { maxUsers, usersWhitelist } = req.body ?? {};
+  const { maxUsers, usersWhitelist, mempoolUrlPrefix } = req.body ?? {};
   if (maxUsers !== undefined) {
     if (usersWhitelist !== undefined) {
       res.status(400).json({
@@ -59,12 +60,23 @@ apiSettingsRouter.post('/general', asyncHandler(async (req, res) => {
     });
     return;
   }
+  if (
+    typeof mempoolUrlPrefix !== 'string'
+    || mempoolUrlPrefix.length > 1000
+    || !/^https?:\/\/\S+/.test(mempoolUrlPrefix)
+  ) {
+    res.status(400).json({
+      error: 'Mempool url must begin with http:// or https:// and contain no spaces',
+    });
+    return;
+  }
   await SettingsModel.updateOne(
     { _id: zeroObjectId },
     {
       $set: {
         ...(maxUsers !== undefined) && { maxUsers },
         ...(usersWhitelist !== undefined) && { usersWhitelist },
+        mempoolUrlPrefix,
       },
       $unset: {
         ...(maxUsers === undefined) && { maxUsers: 1 },

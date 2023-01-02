@@ -1521,19 +1521,23 @@ export class TelegrafManager {
       ));
       return;
     }
+    const settings = await SettingsModel.findById(zeroObjectId);
+    if (!settings) {
+      throw new Error('Settings not found');
+    }
     const parts = replyToMessage.text.split(/[^0-9a-zA-Z.]+/).map(
       (part) => part.replace(/(^\.+|\.+$)/, ''),
     ).filter((part) => part && (part.length <= 128));
     const links: string[] = [];
     for (const part of parts) {
       if (validate(part, bitcoindWatcher.getChain())) {
-        links.push(`https://mempool.space/address/${part}`);
+        links.push(`${settings.mempoolUrlPrefix}/address/${part}`);
       } else if (/^0\.\.0[0-9a-fA-F]+/.test(part)) {
-        links.push(`https://mempool.space/block/${
+        links.push(`${settings.mempoolUrlPrefix}/block/${
           part.replace(/^0\.\.0/, '').padStart(64, '0')
         }`);
       } else if (/^[0-9a-fA-F]{64}$/.test(part)) {
-        links.push(`https://mempool.space/tx/${part}`);
+        links.push(`${settings.mempoolUrlPrefix}/tx/${part}`);
       }
     }
     if (links.length === 0) {

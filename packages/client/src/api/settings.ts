@@ -58,6 +58,7 @@ interface GeneralSettingsRequiredFields {
   bestBlockId: string;
   bitcoindWatcherTasks: number;
   mempoolWeight: number;
+  mempoolUrlPrefix: string;
 }
 
 export type GeneralSettingsInterface = GeneralSettingsRequiredFields & (
@@ -77,7 +78,13 @@ interface UsersWhitelistMutation {
   usersWhitelist: string[];
 }
 
-type GeneralSettingsMutation = MaxUsersMutation | UsersWhitelistMutation
+interface GeneralSettingsMutationRequiredFields {
+  mempoolUrlPrefix: string;
+}
+
+type GeneralSettingsMutation = GeneralSettingsMutationRequiredFields & (
+  MaxUsersMutation | UsersWhitelistMutation
+)
 
 export const useMutationSettingsGeneral = () => {
   const queryClient = useQueryClient();

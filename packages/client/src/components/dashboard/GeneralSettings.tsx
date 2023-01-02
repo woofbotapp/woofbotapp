@@ -69,7 +69,7 @@ export default function GeneralSettings() {
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    // const formData = new FormData(event.currentTarget);
+    const formData = new FormData(event.currentTarget);
     const mutation = (() => {
       if (entryRestriction === EntryRestriction.UsersWhitelist) {
         return {
@@ -89,7 +89,10 @@ export default function GeneralSettings() {
       return { maxUsers: maxUsersNumber };
     })();
     if (mutation) {
-      mutate(mutation);
+      mutate({
+        ...mutation,
+        mempoolUrlPrefix: `${formData.get('mempoolUrlPrefix')}`,
+      });
       setIsEditing(false);
     }
   };
@@ -159,7 +162,7 @@ export default function GeneralSettings() {
           Best block height:
           {' '}
           <ExternalLink
-            href={`https://mempool.space/block/${encodeURIComponent(data.bestBlockId)}`}
+            href={`${data.mempoolUrlPrefix}/block/${encodeURIComponent(data.bestBlockId)}`}
           >
             {data.bestBlockHeight}
           </ExternalLink>
@@ -169,8 +172,17 @@ export default function GeneralSettings() {
           {' '}
           {data.mempoolWeight}
         </Typography>
+        <Typography component="p">
+          Mempool url:
+          {' '}
+          <ExternalLink
+            href={data.mempoolUrlPrefix}
+          >
+            {data.mempoolUrlPrefix}
+          </ExternalLink>
+        </Typography>
         <Typography component="p" sx={{ flex: 1 }}>
-          Bitcoind-Watcher Queued Tasks:
+          Bitcoind-Watcher queued tasks:
           {' '}
           {data.bitcoindWatcherTasks}
         </Typography>
@@ -264,8 +276,24 @@ export default function GeneralSettings() {
             }
           />
         </RadioGroup>
+        <FormLabel>Other</FormLabel>
+        <Box>
+          <FormControlLabel
+            labelPlacement="start"
+            name="mempoolUrlPrefix"
+            control={
+              <TextField
+                disabled={isMutationLoading}
+                sx={{ ml: 2, minWidth: 420 }}
+                defaultValue={data.mempoolUrlPrefix}
+                placeholder="e.g. https://mempool.space"
+              />
+            }
+            label="Mempool url:"
+          />
+        </Box>
       </Box>
-      <Box>
+      <Box sx={{ mt: 2 }}>
         <Button
           type="submit"
           variant="contained"

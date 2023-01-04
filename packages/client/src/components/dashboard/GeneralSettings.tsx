@@ -143,17 +143,21 @@ export default function GeneralSettings() {
               Users whitelist:
               {' '}
               {
-                data.usersWhitelist.map((user, userIndex) => (
-                  <Typography component="span" key={user}>
-                    {userIndex > 0 && ', '}
-                    <ExternalLink
-                      href={`https://t.me/${encodeURIComponent(user)}`}
-                    >
-                      @
-                      {user}
-                    </ExternalLink>
-                  </Typography>
-                ))
+                data.usersWhitelist.length === 0
+                  ? (<Typography component="span">empty</Typography>)
+                  : (
+                    data.usersWhitelist.map((user, userIndex) => (
+                      <Typography component="span" key={user}>
+                        {userIndex > 0 && ', '}
+                        <ExternalLink
+                          href={`https://t.me/${encodeURIComponent(user)}`}
+                        >
+                          @
+                          {user}
+                        </ExternalLink>
+                      </Typography>
+                    ))
+                  )
               }
             </Typography>
           )

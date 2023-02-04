@@ -35,30 +35,48 @@ async function migrateV1(): Promise<void> {
   logger.info('migrateV1: finished');
 }
 
+async function migrateV2(): Promise<void> {
+  logger.info('migrateV2: started');
+  await UsersModel.updateMany(
+    {
+      permissionGroups: {
+        $exists: false,
+      },
+    },
+    {
+      $set: {
+        permissionGroups: [],
+      },
+    },
+  );
+  logger.info('migrateV2: finished');
+}
+
+const migrations = [
+  migrateV0, migrateV1, migrateV2,
+];
+
+export const migrationsLength = migrations.length;
+
 export async function migrate(): Promise<void> {
   logger.info('migrate: started');
   const settings = await SettingsModel.findById(zeroObjectId);
   if (!settings) {
     throw new Error('Failed to find settings');
   }
-  if (settings.migrationVersion < 1) {
-    await migrateV0();
+  for (
+    let { migrationVersion } = settings;
+    migrationVersion < migrationsLength;
+    migrationVersion += 1
+  ) {
+    // eslint-disable-next-line no-await-in-loop
+    await migrations[migrationVersion]();
+    // eslint-disable-next-line no-await-in-loop
     await SettingsModel.updateOne(
       { _id: zeroObjectId },
       {
         $set: {
-          migrationVersion: 1,
-        },
-      },
-    );
-  }
-  if (settings.migrationVersion < 2) {
-    await migrateV1();
-    await SettingsModel.updateOne(
-      { _id: zeroObjectId },
-      {
-        $set: {
-          migrationVersion: 2,
+          migrationVersion: migrationVersion + 1,
         },
       },
     );

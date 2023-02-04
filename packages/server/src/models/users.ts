@@ -10,6 +10,7 @@ interface UserFields {
   watchNewBlocks: boolean;
   watchPriceChange?: number;
   watchMempoolClear: boolean;
+  permissionGroups: string[];
 }
 
 const schema = new Schema<UserFields & TimeFields>({
@@ -20,6 +21,7 @@ const schema = new Schema<UserFields & TimeFields>({
   watchNewBlocks: { type: Boolean, required: true, index: true },
   watchPriceChange: { type: Number, required: false, index: true },
   watchMempoolClear: { type: Boolean, required: true, index: true },
+  permissionGroups: { type: [String], required: true, index: true },
 }, { timestamps: true });
 
 schema.index({ createdAt: 1 });
@@ -30,6 +32,7 @@ export const defaultUserProperties: Omit<
   watchReboot: true,
   watchNewBlocks: false,
   watchMempoolClear: false,
+  permissionGroups: [],
 };
 
 export const UsersModel = model('users', schema);

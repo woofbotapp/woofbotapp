@@ -24,8 +24,7 @@ const schema = new Schema<SettingsFields & TimeFields>({
   mempoolUrlPrefix: { type: String, required: true },
 }, { timestamps: true });
 
-export const defaultSettings: SettingsFields = {
-  migrationVersion: 1,
+export const defaultSettings: Omit<SettingsFields, 'migrationVersion'> = {
   maxUsers: 10,
   bestBlockHeight: 0,
   analyzedBlockHashes: [],

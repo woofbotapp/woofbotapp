@@ -18,7 +18,7 @@ import { bitcoindWatcher, TransactionAnalysis } from './helpers/bitcoind-watcher
 import { WatchedTransactionsModel } from './models/watched-transactions';
 import { WatchedAddressesModel } from './models/watched-addresses';
 import { priceWatcher } from './helpers/price-watcher';
-import { migrate } from './migration';
+import { migrate, migrationsLength } from './migration';
 
 declare global {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -98,7 +98,10 @@ app.use((err, _req, res, _next) => {
   await SettingsModel.updateOne({
     _id: zeroObjectId,
   }, {
-    $setOnInsert: defaultSettings,
+    $setOnInsert: {
+      migrationVersion: migrationsLength,
+      ...defaultSettings,
+    },
   }, {
     upsert: true,
   });

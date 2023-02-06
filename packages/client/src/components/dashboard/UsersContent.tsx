@@ -21,6 +21,7 @@ import { Link } from 'react-router-dom';
 
 import { useMutationDeleteUser, useUsers } from '../../api/users';
 import { pageRoutes } from '../../routes';
+import { prettyDate } from '../../utils/date-utils';
 import Copyright from '../copyright/Copyright';
 import Title from './Title';
 
@@ -106,10 +107,10 @@ export default function UsersContent() {
                                   {attributes.telegramUsername}
                                 </TableCell>
                                 <TableCell>
-                                  {attributes.createdAt}
+                                  {prettyDate(attributes.createdAt)}
                                 </TableCell>
                                 <TableCell>
-                                  {attributes.updatedAt}
+                                  {prettyDate(attributes.updatedAt)}
                                 </TableCell>
                                 <TableCell align="right">
                                   <IconButton

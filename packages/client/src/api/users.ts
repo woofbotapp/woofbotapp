@@ -82,3 +82,38 @@ export const useMutationDeleteUser = () => {
   );
   return mutation;
 };
+
+export interface UserPatch {
+  id: string;
+  permissionGroups?: string[];
+}
+
+export const useMutationPatchUser = () => {
+  const queryClient = useQueryClient();
+  const mutation = useMutation(
+    ({ id, ...attributes }: UserPatch) => api.patch(
+      `${apiRoutes.users}/${encodeURIComponent(id)}`,
+      {
+        data: {
+          id,
+          type: 'users',
+          attributes,
+        },
+      },
+    ),
+    {
+      onSuccess: () => {
+        successToast('User changes were saved successfully');
+      },
+      onError: (error) => {
+        errorToast(
+          ((error instanceof HttpError) && error.message) || 'Internal error',
+        );
+      },
+      onSettled: () => {
+        queryClient.invalidateQueries(apiRoutes.users);
+      },
+    },
+  );
+  return mutation;
+};

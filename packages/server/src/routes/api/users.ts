@@ -196,4 +196,59 @@ apiUsersRouter.get('/:userId([0-9a-f]{24})', asyncHandler(async (req, res) => {
   });
 }));
 
+apiUsersRouter.patch('/:userId([0-9a-f]{24})', asyncHandler(async (req, res) => {
+  const { userId } = req.params;
+  const data = req.body?.data;
+  if (!data || data.type !== 'users' || data.id !== userId || data.relationships) {
+    res.status(400).json({
+      error: 'Invalid body',
+    });
+    return;
+  }
+  const { attributes } = data;
+  if (!attributes || Array.isArray(attributes) || typeof attributes !== 'object') {
+    res.status(400).json({
+      error: 'Invalid attributes field',
+    });
+    return;
+  }
+  const { permissionGroups, ...leftover } = attributes;
+  if (permissionGroups !== undefined) {
+    if (
+      !Array.isArray(permissionGroups) || permissionGroups.length > 100
+      || permissionGroups.some((group) => typeof group !== 'string' || !/^[a-z_]{1,100}$/.test(group))
+    ) {
+      res.status(400).json({
+        error: 'Invalid permission groups attribute',
+      });
+      return;
+    }
+  }
+  if (Object.keys(leftover).length > 0) {
+    res.status(403).json({
+      error: 'Not allowed to change one or more attributes',
+    });
+    return;
+  }
+  const user = await UsersModel.findOneAndUpdate(
+    {
+      _id: new Types.ObjectId(req.params.userId),
+    },
+    {
+      $set: {
+        ...permissionGroups && {
+          permissionGroups,
+        },
+      },
+    },
+  );
+  if (!user) {
+    res.status(404).json({
+      error: 'User not found',
+    });
+    return;
+  }
+  res.json({ ok: true });
+}));
+
 export default apiUsersRouter;

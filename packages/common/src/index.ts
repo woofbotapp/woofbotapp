@@ -27,7 +27,7 @@ export enum BotCommandName {
   WatchMempoolClear = 'watchmempoolclear',
   UnwatchMempoolClear = 'unwatchmempoolclear',
   ListWatches = 'listwatches',
-  MempoolLinks = 'mempoollinks',
+  Links = 'links',
 }
 
 interface BotCommand {
@@ -133,7 +133,7 @@ export const telegramCommands: BotCommand[] = [
     description: `Stop getting notifications of /${BotCommandName.WatchMempoolClear}.`,
   },
   {
-    command: BotCommandName.MempoolLinks,
+    command: BotCommandName.Links,
     description: [
       'Reply to a message with this command to receive links to the blocks, addresses and',
       'transactions that are mentioned in that message.',

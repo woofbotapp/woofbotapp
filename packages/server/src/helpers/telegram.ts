@@ -1513,7 +1513,7 @@ export class TelegrafManager {
     ));
   }
 
-  static async [BotCommandName.MempoolLinks](ctx: TextContext) {
+  static async [BotCommandName.Links](ctx: TextContext) {
     const replyToMessage = ctx.message.reply_to_message;
     if (!replyToMessage) {
       ctx.replyWithMarkdownV2(escapeMarkdown(

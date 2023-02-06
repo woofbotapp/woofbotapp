@@ -8,6 +8,7 @@ import FormLabel from '@mui/material/FormLabel';
 import RadioGroup from '@mui/material/RadioGroup';
 import FormControlLabel from '@mui/material/FormControlLabel';
 import Radio from '@mui/material/Radio';
+import { BotCommandName } from '@woofbot/common';
 import { MuiChipsInput } from 'mui-chips-input';
 
 import { useGetSettingsGeneral, useMutationSettingsGeneral } from '../../api/settings';
@@ -177,7 +178,7 @@ export default function GeneralSettings() {
           {data.mempoolWeight}
         </Typography>
         <Typography component="p">
-          Mempool url:
+          Mempool block explorer url (for the /{BotCommandName.Links} command):
           {' '}
           <ExternalLink
             href={data.mempoolUrlPrefix}
@@ -293,7 +294,7 @@ export default function GeneralSettings() {
                 placeholder="e.g. https://mempool.space"
               />
             }
-            label="Mempool url:"
+            label={`Mempool block explorer url (for the /{BotCommandName.Links} command):`}
           />
         </Box>
       </Box>

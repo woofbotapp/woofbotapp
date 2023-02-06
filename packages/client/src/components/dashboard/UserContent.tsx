@@ -13,6 +13,7 @@ import { Link, useParams } from 'react-router-dom';
 
 import { useUser, WatchedAddressAttributes, WatchedTransactionAttributes } from '../../api/users';
 import { HttpError } from '../../utils/api';
+import { prettyDate } from '../../utils/date-utils';
 import { errorToast } from '../../utils/toast';
 import { pageRoutes } from '../../routes';
 import Copyright from '../copyright/Copyright';
@@ -57,10 +58,10 @@ function WatchedAddressRow({
         }
       </TableCell>
       <TableCell>
-        {watchedAddressAttributes.createdAt}
+        {prettyDate(watchedAddressAttributes.createdAt)}
       </TableCell>
       <TableCell>
-        {watchedAddressAttributes.updatedAt}
+        {prettyDate(watchedAddressAttributes.updatedAt)}
       </TableCell>
     </>
   );
@@ -147,10 +148,10 @@ function WatchedTransactionRow({
         }
       </TableCell>
       <TableCell>
-        {watchedTransactionAttributes.createdAt}
+        {prettyDate(watchedTransactionAttributes.createdAt)}
       </TableCell>
       <TableCell>
-        {watchedTransactionAttributes.updatedAt}
+        {prettyDate(watchedTransactionAttributes.updatedAt)}
       </TableCell>
     </>
   );
@@ -258,12 +259,12 @@ function UserContentByUserId({
                   <Typography component="p">
                     Created At:
                     {' '}
-                    {data.data.attributes.createdAt}
+                    {prettyDate(data.data.attributes.createdAt)}
                   </Typography>
                   <Typography component="p">
                     Updated At:
                     {' '}
-                    {data.data.attributes.updatedAt}
+                    {prettyDate(data.data.attributes.updatedAt)}
                   </Typography>
                 </Paper>
               </Grid>

@@ -20,6 +20,7 @@ const listAttributes = [
   'watchNewBlocks',
   'watchPriceChange',
   'watchMempoolClear',
+  'permissionGroups',
   'updatedAt',
   'createdAt',
 ];

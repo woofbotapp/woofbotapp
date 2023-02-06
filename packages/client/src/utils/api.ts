@@ -106,6 +106,16 @@ export const api = {
     body: JSON.stringify(data),
     ...params,
   }).then(handleJsonResponse) as Promise<T>,
+  patch: <T>(url: string, data: any, params?: object) => window.fetch(url, {
+    method: 'PATCH',
+    cache: 'no-cache',
+    headers: {
+      'Content-Type': 'application/json',
+      ...sessionStorageToken(),
+    },
+    body: JSON.stringify(data),
+    ...params,
+  }).then(handleJsonResponse) as Promise<T>,
   delete: <T>(url: string, params?: object) => window.fetch(url, {
     method: 'DELETE',
     headers: {

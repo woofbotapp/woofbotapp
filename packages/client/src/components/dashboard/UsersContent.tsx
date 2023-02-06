@@ -73,8 +73,8 @@ export default function UsersContent() {
                   <TableHead>
                     <TableRow>
                       <TableCell>Id</TableCell>
-                      <TableCell>Telegram Id</TableCell>
                       <TableCell>Telegram Username</TableCell>
+                      <TableCell>Telegram Id</TableCell>
                       <TableCell>Created At</TableCell>
                       <TableCell>Updated At</TableCell>
                       <TableCell align="right" />
@@ -97,14 +97,14 @@ export default function UsersContent() {
                                   </Typography>
                                 </TableCell>
                                 <TableCell>
+                                  {attributes.telegramUsername}
+                                </TableCell>
+                                <TableCell>
                                   {attributes.telegramFromId}
                                   {
                                     (attributes.telegramFromId !== attributes.telegramChatId)
                                     && ` (${attributes.telegramChatId})`
                                   }
-                                </TableCell>
-                                <TableCell>
-                                  {attributes.telegramUsername}
                                 </TableCell>
                                 <TableCell>
                                   {prettyDate(attributes.createdAt)}

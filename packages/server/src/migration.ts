@@ -4,7 +4,6 @@ import { SettingsModel } from './models/settings';
 import { UsersModel } from './models/users';
 
 async function migrateV0(): Promise<void> {
-  logger.info('migrateV0: started');
   await UsersModel.updateMany(
     {
       watchMempoolClear: {
@@ -17,11 +16,9 @@ async function migrateV0(): Promise<void> {
       },
     },
   );
-  logger.info('migrateV0: finished');
 }
 
 async function migrateV1(): Promise<void> {
-  logger.info('migrateV1: started');
   await SettingsModel.updateOne(
     {
       _id: zeroObjectId,
@@ -32,11 +29,9 @@ async function migrateV1(): Promise<void> {
       },
     },
   );
-  logger.info('migrateV1: finished');
 }
 
 async function migrateV2(): Promise<void> {
-  logger.info('migrateV2: started');
   await UsersModel.updateMany(
     {
       permissionGroups: {
@@ -49,7 +44,6 @@ async function migrateV2(): Promise<void> {
       },
     },
   );
-  logger.info('migrateV2: finished');
 }
 
 const migrations = [
@@ -69,8 +63,11 @@ export async function migrate(): Promise<void> {
     migrationVersion < migrationsLength;
     migrationVersion += 1
   ) {
+    const migration = migrations[migrationVersion];
+    logger.info(`${migration.name}: started`);
     // eslint-disable-next-line no-await-in-loop
-    await migrations[migrationVersion]();
+    await migration();
+    logger.info(`${migration.name}: finished`);
     // eslint-disable-next-line no-await-in-loop
     await SettingsModel.updateOne(
       { _id: zeroObjectId },

@@ -1,6 +1,9 @@
+import { BotCommandName, telegramCommands } from '@woofbot/common';
 import { Schema, model } from 'mongoose';
 
 import { TimeFields } from '../helpers/mongo';
+
+type CommandsPermissionGroupsMap = Partial<Record<BotCommandName, string[]>>;
 
 interface SettingsFields {
   migrationVersion: number;
@@ -11,7 +14,20 @@ interface SettingsFields {
   bestBlockHeight: number;
   analyzedBlockHashes: string[];
   mempoolUrlPrefix: string;
+  commandsPermissionGroups: CommandsPermissionGroupsMap;
 }
+
+const commandsPermissionGroupsSchema = new Schema<CommandsPermissionGroupsMap>(
+  Object.fromEntries(
+    telegramCommands.filter(({ alwaysPermitted }) => !alwaysPermitted).map(
+      ({ command }) => [
+        command,
+        { type: [String], required: false, default: undefined },
+      ],
+    ),
+  ),
+  { _id: false },
+);
 
 const schema = new Schema<SettingsFields & TimeFields>({
   migrationVersion: { type: Number, required: true },
@@ -22,6 +38,7 @@ const schema = new Schema<SettingsFields & TimeFields>({
   bestBlockHeight: { type: Number, required: true },
   analyzedBlockHashes: { type: [String], required: true },
   mempoolUrlPrefix: { type: String, required: true },
+  commandsPermissionGroups: { type: commandsPermissionGroupsSchema, required: true },
 }, { timestamps: true });
 
 export const defaultSettings: Omit<SettingsFields, 'migrationVersion'> = {
@@ -29,6 +46,7 @@ export const defaultSettings: Omit<SettingsFields, 'migrationVersion'> = {
   bestBlockHeight: 0,
   analyzedBlockHashes: [],
   mempoolUrlPrefix: 'https://mempool.space',
+  commandsPermissionGroups: {},
 };
 
 export const SettingsModel = model('settings', schema);

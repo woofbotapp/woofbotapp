@@ -3,10 +3,10 @@ import Grid from '@mui/material/Grid';
 import Paper from '@mui/material/Paper';
 
 import Title from './Title';
-import Commands from './Commands';
 import Copyright from '../copyright/Copyright';
 import TelegramSettings from './TelegramSettings';
 import GeneralSettings from './GeneralSettings';
+import CommandsList from './CommandsList';
 
 export default function HomeContent() {
   return (
@@ -44,7 +44,7 @@ export default function HomeContent() {
         <Grid item xs={12} md={10} lg={10}>
           <Paper sx={{ p: 2, display: 'flex', flexDirection: 'column' }}>
             <Title>Commands</Title>
-            <Commands />
+            <CommandsList />
           </Paper>
         </Grid>
         <Grid xs={0} md={1} lg={1} />

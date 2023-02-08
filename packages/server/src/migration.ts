@@ -46,8 +46,23 @@ async function migrateV2(): Promise<void> {
   );
 }
 
+async function migrateV3(): Promise<void> {
+  await SettingsModel.updateOne(
+    {
+      commandsPermissionGroups: {
+        $exists: false,
+      },
+    },
+    {
+      $set: {
+        commandsPermissionGroups: {},
+      },
+    },
+  );
+}
+
 const migrations = [
-  migrateV0, migrateV1, migrateV2,
+  migrateV0, migrateV1, migrateV2, migrateV3,
 ];
 
 export const migrationsLength = migrations.length;

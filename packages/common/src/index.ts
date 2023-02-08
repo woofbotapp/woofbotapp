@@ -167,3 +167,5 @@ export const telegramCommands: BotCommand[] = [
     alwaysPermitted: true,
   },
 ];
+
+export const permissionGroupNameRegex = /^[a-z_]{1,100}$/;

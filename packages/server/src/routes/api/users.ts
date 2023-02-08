@@ -1,5 +1,6 @@
 import Router from 'express';
 import { Types } from 'mongoose';
+import { permissionGroupNameRegex } from '@woofbot/common';
 
 import { asyncHandler } from '../../helpers/express';
 import { UsersModel } from '../../models/users';
@@ -216,7 +217,9 @@ apiUsersRouter.patch('/:userId([0-9a-f]{24})', asyncHandler(async (req, res) => 
   if (permissionGroups !== undefined) {
     if (
       !Array.isArray(permissionGroups) || permissionGroups.length > 100
-      || permissionGroups.some((group) => typeof group !== 'string' || !/^[a-z_]{1,100}$/.test(group))
+      || permissionGroups.some((group) => (
+        typeof group !== 'string' || !permissionGroupNameRegex.test(group)
+      ))
     ) {
       res.status(400).json({
         error: 'Invalid permission groups attribute',

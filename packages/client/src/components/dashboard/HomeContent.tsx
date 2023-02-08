@@ -43,7 +43,6 @@ export default function HomeContent() {
         <Grid xs={0} md={1} lg={1} />
         <Grid item xs={12} md={10} lg={10}>
           <Paper sx={{ p: 2, display: 'flex', flexDirection: 'column' }}>
-            <Title>Commands</Title>
             <CommandsList />
           </Paper>
         </Grid>

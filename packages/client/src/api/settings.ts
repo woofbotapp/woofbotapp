@@ -1,4 +1,4 @@
-import { TelegramStatus } from '@woofbot/common';
+import { BotCommandName, TelegramStatus } from '@woofbot/common';
 import { useMutation, useQueryClient } from 'react-query';
 
 import { apiRoutes } from '../routes';
@@ -101,6 +101,39 @@ export const useMutationSettingsGeneral = () => {
       },
       onSettled: () => {
         queryClient.invalidateQueries(apiRoutes.settingsGeneral);
+      },
+    },
+  );
+  return mutation;
+};
+
+type CommandsPermissionGroupsMap = Partial<Record<BotCommandName, string[]>>;
+
+export const useGetSettingsCommandsPermissionGroups = () => useAuthQuery<
+  CommandsPermissionGroupsMap
+>(
+  apiRoutes.settingsCommandsPermissionGroups,
+  () => api.get(apiRoutes.settingsCommandsPermissionGroups),
+);
+
+export const useMutationCommandsPermissionGroups = () => {
+  const queryClient = useQueryClient();
+  const mutation = useMutation(
+    (options: CommandsPermissionGroupsMap) => api.post(
+      apiRoutes.settingsCommandsPermissionGroups,
+      options,
+    ),
+    {
+      onSuccess: () => {
+        successToast('Permission groups were saved successfully');
+      },
+      onError: (error) => {
+        errorToast(
+          ((error instanceof HttpError) && error.message) || 'Internal error',
+        );
+      },
+      onSettled: () => {
+        queryClient.invalidateQueries(apiRoutes.settingsCommandsPermissionGroups);
       },
     },
   );

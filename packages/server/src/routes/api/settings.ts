@@ -1,3 +1,4 @@
+import { permissionGroupNameRegex, telegramCommands } from '@woofbot/common';
 import Router from 'express';
 
 import { asyncHandler } from '../../helpers/express';
@@ -179,6 +180,50 @@ apiSettingsRouter.post('/telegram', asyncHandler(async (req, res) => {
   } finally {
     telegramPostLock = false;
   }
+}));
+
+apiSettingsRouter.get('/commands-permission-groups', asyncHandler(async (req, res) => {
+  const settings = await SettingsModel.findById(zeroObjectId);
+  if (!settings) {
+    throw new Error('Could not find settings document');
+  }
+  res.json(settings.commandsPermissionGroups);
+}));
+
+const permissionGroupsCommands = new Set<string>(
+  telegramCommands.filter(({ alwaysPermitted }) => !alwaysPermitted).map(({ command }) => command),
+);
+
+apiSettingsRouter.post('/commands-permission-groups', asyncHandler(async (req, res) => {
+  // No patches - just replace all.
+  const { body } = req;
+  if (
+    !body || typeof body !== 'object' || Array.isArray(body)
+    || Object.entries(body).some(([key, value]) => (
+      !permissionGroupsCommands.has(key)
+      || !Array.isArray(value)
+      || value.length > 100
+      || value.some((groupName) => (
+        typeof groupName !== 'string' || !permissionGroupNameRegex.test(groupName)
+      ))
+    ))
+  ) {
+    res.status(400).json({
+      error: 'Invalid body',
+    });
+    return;
+  }
+  await SettingsModel.updateOne(
+    { _id: zeroObjectId },
+    {
+      $set: {
+        commandsPermissionGroups: body,
+      },
+    },
+  );
+  res.json({
+    ok: true,
+  });
 }));
 
 export default apiSettingsRouter;

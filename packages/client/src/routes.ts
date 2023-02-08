@@ -7,6 +7,7 @@ export const apiRoutes = {
   ping: '/api/ping',
   settingsGeneral: '/api/settings/general',
   settingsTelegram: '/api/settings/telegram',
+  settingsCommandsPermissionGroups: '/api/settings/commands-permission-groups',
   stats: '/api/stats',
   users: '/api/users',
 };

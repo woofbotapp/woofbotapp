@@ -11,6 +11,7 @@ import TableRow from '@mui/material/TableRow';
 import CircularProgressIcon from '@mui/material/CircularProgress';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import Typography from '@mui/material/Typography';
+import { permissionGroupNameRegex } from '@woofbot/common';
 import { MuiChipsInput } from 'mui-chips-input';
 import { Link, useParams } from 'react-router-dom';
 
@@ -332,7 +333,7 @@ function UserContentByUserId({
                       }}
                       addOnWhichKey={[' ', 'Enter']}
                       validate={(value) => {
-                        if (!/^[a-z_]{1,100}$/.test(value)) {
+                        if (!permissionGroupNameRegex.test(value)) {
                           return {
                             isError: true,
                             textError: 'Group names may contain only lowercase english letters and underscores',

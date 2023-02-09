@@ -19,6 +19,7 @@ import {
   useMutationPatchUser, useUser, WatchedAddressAttributes, WatchedTransactionAttributes,
   UserPatch,
 } from '../../api/users';
+import { arraysEqual } from '../../utils/array-utils';
 import { HttpError } from '../../utils/api';
 import { prettyDate } from '../../utils/date-utils';
 import { errorToast } from '../../utils/toast';
@@ -190,9 +191,7 @@ function UserContentByUserId({
       return;
     }
     const { permissionGroups } = data.data.attributes;
-    if (permissionGroups.length === patchDataPermissionGroups.length
-      && permissionGroups.every((group, index) => group === patchDataPermissionGroups[index])
-    ) {
+    if (arraysEqual(permissionGroups, patchDataPermissionGroups)) {
       const newPatchData = { ...patchData };
       delete newPatchData.permissionGroups;
       setPatchData(newPatchData);

@@ -14,6 +14,7 @@ interface UserAttributes {
   watchNewBlocks: boolean;
   watchPriceChange?: number;
   watchMempoolClear: boolean;
+  permissionGroups: string[];
   createdAt: string;
   updatedAt: string;
 }

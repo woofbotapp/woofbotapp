@@ -18,14 +18,9 @@ import { errorToast } from '../../utils/toast';
 import { pageRoutes } from '../../routes';
 import Copyright from '../copyright/Copyright';
 import Title from './Title';
+import { emptyTableCell } from './emptyTableCell';
 import ExternalLink from '../external-link/ExternalLink';
 import { useGetSettingsGeneral } from '../../api/settings';
-
-const emptyTableCell = (
-  <Typography component="span" variant="body2" color="text.secondary">
-    -
-  </Typography>
-);
 
 interface WatchedAddressRowProperties {
   watchedAddressAttributes?: WatchedAddressAttributes;

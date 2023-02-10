@@ -29,7 +29,7 @@ schema.index({ createdAt: 1 });
 export const defaultUserProperties: Omit<
   UserFields, 'telegramFromId' | 'telegramUsername' | 'telegramChatId'
 > = {
-  watchReboot: true,
+  watchReboot: false,
   watchNewBlocks: false,
   watchMempoolClear: false,
   permissionGroups: [],

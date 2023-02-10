@@ -1,10 +1,10 @@
-import { TelegramStatus, telegramCommands, BotCommandName } from '@woofbot/common';
+import { TelegramStatus, telegramCommands, BotCommand, BotCommandName } from '@woofbot/common';
 import { Context, Telegraf, TelegramError } from 'telegraf';
 import { validate } from 'bitcoin-address-validation';
 import { Types } from 'mongoose';
 
 import { SettingsModel } from '../models/settings';
-import { defaultUserProperties, UsersModel, UserDocument } from '../models/users';
+import { defaultUserProperties, UsersModel, UserDocument, UserFields } from '../models/users';
 import { WatchedAddressesModel } from '../models/watched-addresses';
 import { TransactionStatus, WatchedTransactionsModel } from '../models/watched-transactions';
 import { unwatchUnusedAddresses } from '../controllers/addresses';
@@ -48,6 +48,11 @@ For more information, call /help.`)}${sponsorship}`;
 
 const notFoundMessage = escapeMarkdown('Woof! Call /start first.');
 
+const notPermittedMessage = escapeMarkdown(`\
+👮 Sorry you are not allowed to run this command, please contact the bot administrator to add your\
+ user to one of the command's permission groups\
+`);
+
 interface MessageTask {
   chatId: string | number;
   text: string;
@@ -66,6 +71,10 @@ const telegramCommandByParametersRequestMessage = new Map(
   telegramCommands.filter(
     (telegramCommand) => telegramCommand.parametersRequestMessage,
   ).map((telegramCommand) => [telegramCommand.parametersRequestMessage, telegramCommand]),
+);
+
+const filteredTelegramCommands = telegramCommands.filter(
+  ({ command }) => ![BotCommandName.Help, BotCommandName.Start].includes(command),
 );
 
 export class TelegrafManager {
@@ -720,6 +729,24 @@ export class TelegrafManager {
     }
   }
 
+  static async isPermitted(user: UserFields, command: BotCommand): Promise<boolean> {
+    if (command.alwaysPermitted) {
+      return true;
+    }
+    const settings = await SettingsModel.findById(zeroObjectId);
+    if (!settings) {
+      throw new Error('Settings not found to check permission groups');
+    }
+    const commandPermissionGroups = settings?.commandsPermissionGroups[command.command];
+    if (!commandPermissionGroups) {
+      return true;
+    }
+    const commandPermissionGroupsSet = new Set(commandPermissionGroups);
+    return user.permissionGroups.some(
+      (group) => commandPermissionGroupsSet.has(group),
+    );
+  }
+
   async startBot(token: string) {
     if (this.internalStatus === TelegramStatus.Loading) {
       throw new Error('Already loading');
@@ -813,13 +840,8 @@ export class TelegrafManager {
           );
         }
       });
-      const filteredTelegramCommandNames = telegramCommands.map(
-        ({ command }) => command,
-      ).filter(
-        (command) => ![BotCommandName.Help, BotCommandName.Start].includes(command),
-      );
-      for (const command of filteredTelegramCommandNames) {
-        bot.command(command, async (ctx) => {
+      for (const command of filteredTelegramCommands) {
+        bot.command(command.command, async (ctx) => {
           try {
             const user = ctx.from?.id && await UsersModel.findOne(
               {
@@ -853,9 +875,13 @@ export class TelegrafManager {
                 user.telegramUsername = ctx.from.username;
               }
             }
+            if (!await TelegrafManager.isPermitted(user, command)) {
+              ctx.replyWithMarkdownV2(notPermittedMessage);
+              return;
+            }
             const args = ctx.message.text.trim().split(/\s+/).slice(1);
             const parametersRequestMessage = telegramCommandByName.get(
-              command,
+              command.command,
             )?.parametersRequestMessage;
             if ((args.length === 0) && parametersRequestMessage) {
               await ctx.replyWithMarkdownV2(
@@ -868,7 +894,7 @@ export class TelegrafManager {
               );
               return;
             }
-            await this.runCommand(command, ctx as TextContext, user, args);
+            await this.runCommand(command.command, ctx as TextContext, user, args);
           } catch (error) {
             logger.error(
               `TelegrafManager: Failed to run command ${command} for chat-id ${
@@ -921,6 +947,10 @@ export class TelegrafManager {
               );
               if (!user) {
                 await ctx.replyWithMarkdownV2(notFoundMessage);
+                return;
+              }
+              if (!await TelegrafManager.isPermitted(user, telegramCommand)) {
+                ctx.replyWithMarkdownV2(notPermittedMessage);
                 return;
               }
               await this.runCommand(telegramCommand.command, textContext, user, args);

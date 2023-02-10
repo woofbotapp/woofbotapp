@@ -24,6 +24,7 @@ import { pageRoutes } from '../../routes';
 import { prettyDate } from '../../utils/date-utils';
 import Copyright from '../copyright/Copyright';
 import Title from './Title';
+import { emptyTableCell } from './emptyTableCell';
 
 export default function UsersContent() {
   const {
@@ -75,6 +76,7 @@ export default function UsersContent() {
                       <TableCell>Id</TableCell>
                       <TableCell>Telegram Username</TableCell>
                       <TableCell>Telegram Id</TableCell>
+                      <TableCell>Permission Groups</TableCell>
                       <TableCell>Created At</TableCell>
                       <TableCell>Updated At</TableCell>
                       <TableCell align="right" />
@@ -104,6 +106,13 @@ export default function UsersContent() {
                                   {
                                     (attributes.telegramFromId !== attributes.telegramChatId)
                                     && ` (${attributes.telegramChatId})`
+                                  }
+                                </TableCell>
+                                <TableCell>
+                                  {
+                                    attributes.permissionGroups.length > 0
+                                      ? attributes.permissionGroups.join(', ')
+                                      : emptyTableCell
                                   }
                                 </TableCell>
                                 <TableCell>

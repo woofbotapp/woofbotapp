@@ -30,7 +30,7 @@ export enum BotCommandName {
   Links = 'links',
 }
 
-interface BotCommand {
+export interface BotCommand {
   command: BotCommandName;
   description: string;
   alwaysPermitted: boolean;

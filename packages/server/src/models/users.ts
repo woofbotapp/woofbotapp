@@ -2,7 +2,7 @@ import { Schema, model, HydratedDocument } from 'mongoose';
 
 import { TimeFields } from '../helpers/mongo';
 
-interface UserFields {
+export interface UserFields {
   telegramFromId: number;
   telegramUsername: string;
   telegramChatId: number;

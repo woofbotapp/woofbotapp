@@ -1,4 +1,6 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
+import Button from '@mui/material/Button';
+import Box from '@mui/material/Box';
 import Grid from '@mui/material/Grid';
 import Paper from '@mui/material/Paper';
 import Table from '@mui/material/Table';
@@ -9,9 +11,13 @@ import TableRow from '@mui/material/TableRow';
 import CircularProgressIcon from '@mui/material/CircularProgress';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import Typography from '@mui/material/Typography';
+import { MuiChipsInput } from 'mui-chips-input';
 import { Link, useParams } from 'react-router-dom';
 
-import { useUser, WatchedAddressAttributes, WatchedTransactionAttributes } from '../../api/users';
+import {
+  useMutationPatchUser, useUser, WatchedAddressAttributes, WatchedTransactionAttributes,
+  UserPatch,
+} from '../../api/users';
 import { HttpError } from '../../utils/api';
 import { prettyDate } from '../../utils/date-utils';
 import { errorToast } from '../../utils/toast';
@@ -167,6 +173,8 @@ function UserContentByUserId({
     data, error,
   } = useUser(userId);
   const { data: generalSettings } = useGetSettingsGeneral();
+  const [patchData, setPatchData] = useState<Omit<UserPatch, 'id'>>({});
+  const { mutate: mutatePatchUser, isLoading: isMutationLoading } = useMutationPatchUser();
   useEffect(() => {
     if (!error) {
       return;
@@ -175,6 +183,20 @@ function UserContentByUserId({
       ((error instanceof HttpError) && error.message) || 'Internal error',
     );
   }, [error]);
+  useEffect(() => {
+    const patchDataPermissionGroups = patchData.permissionGroups;
+    if (!data || !patchDataPermissionGroups) {
+      return;
+    }
+    const { permissionGroups } = data.data.attributes;
+    if (permissionGroups.length === patchDataPermissionGroups.length
+      && permissionGroups.every((group, index) => group === patchDataPermissionGroups[index])
+    ) {
+      const newPatchData = { ...patchData };
+      delete newPatchData.permissionGroups;
+      setPatchData(newPatchData);
+    }
+  }, [data, patchData]);
   const watchedAddresses = data && new Map<string, WatchedAddressAttributes>(
     data.included.filter(
       (jsonApiData) => (jsonApiData.type === 'watched-addresses'),
@@ -186,10 +208,12 @@ function UserContentByUserId({
     ).map((jsonApiData) => [jsonApiData.id,
       jsonApiData.attributes as WatchedTransactionAttributes]),
   );
+  const attributes = data && data.data.attributes;
+  const hasChanges = Object.keys(patchData).length > 0;
   return (
     <>
       <Grid container spacing={3}>
-        <Grid item xs={12}>
+        <Grid item xs={10}>
           <Title>
             <Link to={pageRoutes.users}>
               <ArrowBackIcon sx={{ color: 'primary.main', mb: -0.5, mr: 1 }} />
@@ -198,6 +222,37 @@ function UserContentByUserId({
             {' '}
             {userId}
           </Title>
+        </Grid>
+        <Grid item xs={2}>
+          <Box
+            sx={{
+              display: 'flex',
+              flexDirection: 'row',
+              justifyContent: 'flex-end',
+              gap: 2,
+            }}
+          >
+            <Box>
+              <Button
+                variant="outlined"
+                disabled={isMutationLoading || !hasChanges}
+                onClick={() => setPatchData({})}
+              >
+                Cancel
+              </Button>
+            </Box>
+            <Box>
+              <Button
+                variant="contained"
+                disabled={isMutationLoading || !hasChanges}
+                onClick={() => {
+                  mutatePatchUser({ id: userId, ...patchData });
+                }}
+              >
+                Save
+              </Button>
+            </Box>
+          </Box>
         </Grid>
         {
           !data && !error && (
@@ -214,7 +269,7 @@ function UserContentByUserId({
           )
         }
         {
-          data && (
+          attributes && (
             <>
               <Grid item xs={12} md={6} lg={6}>
                 <Paper
@@ -234,32 +289,59 @@ function UserContentByUserId({
                     <ExternalLink
                       href={
                         `https://t.me/${
-                          encodeURIComponent(data.data.attributes.telegramUsername)
+                          encodeURIComponent(attributes.telegramUsername)
                         }`
                       }
                     >
                       @
-                      {data.data.attributes.telegramUsername}
+                      {attributes.telegramUsername}
                     </ExternalLink>
                   </Typography>
                   <Typography component="p">
                     Telegram Id:
                     {' '}
-                    {data.data.attributes.telegramFromId}
+                    {attributes.telegramFromId}
                     {
-                      (data.data.attributes.telegramFromId !== data.data.attributes.telegramChatId)
-                      && ` (${data.data.attributes.telegramChatId})`
+                      (attributes.telegramFromId !== attributes.telegramChatId)
+                      && ` (${attributes.telegramChatId})`
                     }
                   </Typography>
                   <Typography component="p">
                     Created At:
                     {' '}
-                    {prettyDate(data.data.attributes.createdAt)}
+                    {prettyDate(attributes.createdAt)}
                   </Typography>
                   <Typography component="p">
                     Updated At:
                     {' '}
-                    {prettyDate(data.data.attributes.updatedAt)}
+                    {prettyDate(attributes.updatedAt)}
+                  </Typography>
+                  <Typography component="p">
+                    Permission Groups:
+                  </Typography>
+                  <Typography component="p">
+                    <MuiChipsInput
+                      size="small"
+                      clearInputOnBlur
+                      value={patchData.permissionGroups ?? data.data.attributes.permissionGroups}
+                      onChange={(value) => {
+                        setPatchData({
+                          ...patchData,
+                          permissionGroups: value,
+                        });
+                      }}
+                      addOnWhichKey={[' ', 'Enter']}
+                      validate={(value) => {
+                        if (!/^[a-z_]{1,100}$/.test(value)) {
+                          return {
+                            isError: true,
+                            textError: 'Group names may contain only lowercase english letters and underscores',
+                          };
+                        }
+                        return true;
+                      }}
+                      sx={{ width: '100%', pl: 1 }}
+                    />
                   </Typography>
                 </Paper>
               </Grid>

@@ -31,7 +31,7 @@ export enum BotCommandName {
 }
 
 export interface BotCommand {
-  command: BotCommandName;
+  name: BotCommandName;
   description: string;
   alwaysPermitted: boolean;
   parametersRequestMessage?: string;
@@ -39,42 +39,42 @@ export interface BotCommand {
 
 export const telegramCommands: BotCommand[] = [
   {
-    command: BotCommandName.Start,
+    name: BotCommandName.Start,
     description: 'Registers to the server.',
     alwaysPermitted: true,
   },
   {
-    command: BotCommandName.Help,
+    name: BotCommandName.Help,
     description: 'Shows help about available commands.',
     alwaysPermitted: true,
   },
   {
-    command: BotCommandName.WhoAmI,
+    name: BotCommandName.WhoAmI,
     description: 'Replies with your username and ids.',
     alwaysPermitted: true,
   },
   {
-    command: BotCommandName.WatchReboot,
+    name: BotCommandName.WatchReboot,
     description: 'Get notifications when server reboots.',
     alwaysPermitted: false,
   },
   {
-    command: BotCommandName.UnwatchReboot,
+    name: BotCommandName.UnwatchReboot,
     description: 'Stop getting notification when server reboots.',
     alwaysPermitted: true,
   },
   {
-    command: BotCommandName.WatchNewBlocks,
+    name: BotCommandName.WatchNewBlocks,
     description: 'Get notifications new blocks are mined.',
     alwaysPermitted: false,
   },
   {
-    command: BotCommandName.UnwatchNewBlocks,
+    name: BotCommandName.UnwatchNewBlocks,
     description: 'Stop getting notification when new blocks are mined.',
     alwaysPermitted: true,
   },
   {
-    command: BotCommandName.WatchTransaction,
+    name: BotCommandName.WatchTransaction,
     description: [
       'Get notifications when a transaction is found in the mempool, confirmed,',
       'or is being double-spent.',
@@ -89,7 +89,7 @@ export const telegramCommands: BotCommand[] = [
     ].join(' '),
   },
   {
-    command: BotCommandName.UnwatchTransactions,
+    name: BotCommandName.UnwatchTransactions,
     description: 'Stop getting notifications about one or more transactions.',
     alwaysPermitted: true,
     parametersRequestMessage: [
@@ -99,7 +99,7 @@ export const telegramCommands: BotCommand[] = [
     ].join(' '),
   },
   {
-    command: BotCommandName.WatchAddresses,
+    name: BotCommandName.WatchAddresses,
     description: [
       'Get notification when a transaction spending to the given addresses is added to the',
       'mempool or confirmed. Get notification when a transaction spending from the given',
@@ -115,7 +115,7 @@ export const telegramCommands: BotCommand[] = [
     ].join(' '),
   },
   {
-    command: BotCommandName.UnwatchAddresses,
+    name: BotCommandName.UnwatchAddresses,
     description: 'Stop getting notifications about one or more addresses.',
     alwaysPermitted: true,
     parametersRequestMessage: [
@@ -125,18 +125,18 @@ export const telegramCommands: BotCommand[] = [
     ].join(' '),
   },
   {
-    command: BotCommandName.WatchPriceChange,
+    name: BotCommandName.WatchPriceChange,
     description: 'Watch changes in the price of Bitcoin (in USD).',
     alwaysPermitted: false,
     parametersRequestMessage: 'What price change (in USD) do you want to watch?',
   },
   {
-    command: BotCommandName.UnwatchPriceChange,
+    name: BotCommandName.UnwatchPriceChange,
     description: 'Stop getting notifications about changes in the price of Bitcoin.',
     alwaysPermitted: true,
   },
   {
-    command: BotCommandName.WatchMempoolClear,
+    name: BotCommandName.WatchMempoolClear,
     description: [
       'Get notification when all the transactions in the mempool could fit in the next block and',
       'there is room for more, and when the mempool becomes full again.',
@@ -144,12 +144,12 @@ export const telegramCommands: BotCommand[] = [
     alwaysPermitted: false,
   },
   {
-    command: BotCommandName.UnwatchMempoolClear,
+    name: BotCommandName.UnwatchMempoolClear,
     description: `Stop getting notifications of /${BotCommandName.WatchMempoolClear}.`,
     alwaysPermitted: true,
   },
   {
-    command: BotCommandName.Links,
+    name: BotCommandName.Links,
     description: [
       'Reply to a message with this command to receive links to the blocks, addresses and',
       'transactions that are mentioned in that message.',
@@ -157,12 +157,12 @@ export const telegramCommands: BotCommand[] = [
     alwaysPermitted: true,
   },
   {
-    command: BotCommandName.ListWatches,
+    name: BotCommandName.ListWatches,
     description: 'Lists all your configured watches.',
     alwaysPermitted: true,
   },
   {
-    command: BotCommandName.Quit,
+    name: BotCommandName.Quit,
     description: 'Unregister from the server.',
     alwaysPermitted: true,
   },

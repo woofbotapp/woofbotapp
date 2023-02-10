@@ -1,10 +1,14 @@
-import { TelegramStatus, telegramCommands, BotCommand, BotCommandName } from '@woofbot/common';
+import {
+  TelegramStatus, telegramCommands, BotCommand, BotCommandName,
+} from '@woofbot/common';
 import { Context, Telegraf, TelegramError } from 'telegraf';
 import { validate } from 'bitcoin-address-validation';
 import { Types } from 'mongoose';
 
 import { SettingsModel } from '../models/settings';
-import { defaultUserProperties, UsersModel, UserDocument, UserFields } from '../models/users';
+import {
+  defaultUserProperties, UsersModel, UserDocument, UserFields,
+} from '../models/users';
 import { WatchedAddressesModel } from '../models/watched-addresses';
 import { TransactionStatus, WatchedTransactionsModel } from '../models/watched-transactions';
 import { unwatchUnusedAddresses } from '../controllers/addresses';
@@ -64,7 +68,7 @@ const transactionAnalysisTimeoutMs = 300_000;
 const blockSkippedWarningBackoffMs = 300_000;
 
 const telegramCommandByName = new Map(
-  telegramCommands.map((telegramCommand) => [telegramCommand.command, telegramCommand]),
+  telegramCommands.map((telegramCommand) => [telegramCommand.name, telegramCommand]),
 );
 
 const telegramCommandByParametersRequestMessage = new Map(
@@ -74,7 +78,7 @@ const telegramCommandByParametersRequestMessage = new Map(
 );
 
 const filteredTelegramCommands = telegramCommands.filter(
-  ({ command }) => ![BotCommandName.Help, BotCommandName.Start].includes(command),
+  ({ name }) => ![BotCommandName.Help, BotCommandName.Start].includes(name),
 );
 
 export class TelegrafManager {
@@ -737,7 +741,7 @@ export class TelegrafManager {
     if (!settings) {
       throw new Error('Settings not found to check permission groups');
     }
-    const commandPermissionGroups = settings?.commandsPermissionGroups[command.command];
+    const commandPermissionGroups = settings?.commandsPermissionGroups[command.name];
     if (!commandPermissionGroups) {
       return true;
     }
@@ -828,7 +832,7 @@ export class TelegrafManager {
           await ctx.replyWithMarkdownV2(escapeMarkdown(
             `Woof! These are the commands that I was trained for:\n${
               telegramCommands.map(
-                ({ command, description }) => `/${command} - ${description}`,
+                ({ name, description }) => `/${name} - ${description}`,
               ).join('\n')
             }`,
           ));
@@ -841,7 +845,7 @@ export class TelegrafManager {
         }
       });
       for (const command of filteredTelegramCommands) {
-        bot.command(command.command, async (ctx) => {
+        bot.command(command.name, async (ctx) => {
           try {
             const user = ctx.from?.id && await UsersModel.findOne(
               {
@@ -881,7 +885,7 @@ export class TelegrafManager {
             }
             const args = ctx.message.text.trim().split(/\s+/).slice(1);
             const parametersRequestMessage = telegramCommandByName.get(
-              command.command,
+              command.name,
             )?.parametersRequestMessage;
             if ((args.length === 0) && parametersRequestMessage) {
               await ctx.replyWithMarkdownV2(
@@ -894,7 +898,7 @@ export class TelegrafManager {
               );
               return;
             }
-            await this.runCommand(command.command, ctx as TextContext, user, args);
+            await this.runCommand(command.name, ctx as TextContext, user, args);
           } catch (error) {
             logger.error(
               `TelegrafManager: Failed to run command ${command} for chat-id ${
@@ -953,7 +957,7 @@ export class TelegrafManager {
                 ctx.replyWithMarkdownV2(notPermittedMessage);
                 return;
               }
-              await this.runCommand(telegramCommand.command, textContext, user, args);
+              await this.runCommand(telegramCommand.name, textContext, user, args);
               return;
             }
           }
@@ -970,7 +974,9 @@ export class TelegrafManager {
       });
       logger.info('TelegrafManager: settings commands');
       await bot.telegram.setMyCommands(
-        telegramCommands.map(({ command, description }) => ({ command, description })),
+        telegramCommands.map(
+          ({ name, description }) => ({ command: name, description }),
+        ),
       );
       logger.info('TelegrafManager: starting launch');
       bot.launch({

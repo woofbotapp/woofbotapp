@@ -20,8 +20,8 @@ interface SettingsFields {
 const commandsPermissionGroupsSchema = new Schema<CommandsPermissionGroupsMap>(
   Object.fromEntries(
     telegramCommands.filter(({ alwaysPermitted }) => !alwaysPermitted).map(
-      ({ command }) => [
-        command,
+      ({ name }) => [
+        name,
         { type: [String], required: false, default: undefined },
       ],
     ),

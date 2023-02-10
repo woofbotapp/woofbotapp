@@ -191,7 +191,7 @@ apiSettingsRouter.get('/commands-permission-groups', asyncHandler(async (req, re
 }));
 
 const permissionGroupsCommands = new Set<string>(
-  telegramCommands.filter(({ alwaysPermitted }) => !alwaysPermitted).map(({ command }) => command),
+  telegramCommands.filter(({ alwaysPermitted }) => !alwaysPermitted).map(({ name }) => name),
 );
 
 apiSettingsRouter.post('/commands-permission-groups', asyncHandler(async (req, res) => {

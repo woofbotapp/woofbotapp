@@ -39,9 +39,9 @@ export default function CommandsList() {
       return;
     }
     if (telegramCommands.some(
-      ({ command }) => {
-        const commandPermissionGroups = originalPermissionGroups[command];
-        const commandPatchedPermissionGroups = permissionGroups[command];
+      ({ name }) => {
+        const commandPermissionGroups = originalPermissionGroups[name];
+        const commandPatchedPermissionGroups = permissionGroups[name];
         return (
           Boolean(commandPermissionGroups) !== Boolean(commandPatchedPermissionGroups)
           || (
@@ -102,17 +102,17 @@ export default function CommandsList() {
       </Box>
       <List dense sx={{ py: 0 }}>
         {
-          telegramCommands.map(({ command, description, alwaysPermitted }) => (
+          telegramCommands.map(({ name, description, alwaysPermitted }) => (
             <Command
-              key={command}
-              command={command}
+              key={name}
+              command={name}
               description={description}
-              permissionGroups={(permissionGroups ?? originalPermissionGroups)?.[command]}
+              permissionGroups={(permissionGroups ?? originalPermissionGroups)?.[name]}
               onChange={
                 alwaysPermitted ? undefined : onChangePermissionGroups
               }
               disabled={isLoading}
-              originalPermissionGroups={originalPermissionGroups?.[command]}
+              originalPermissionGroups={originalPermissionGroups?.[name]}
             />
           ))
         }

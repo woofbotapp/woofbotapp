@@ -1,3 +1,5 @@
+import logger from './logger';
+
 export interface ChainInfo {
   chain: string
   blocks: number
@@ -460,26 +462,49 @@ function fixLocalAddress(address: string): string {
 }
 
 export interface ZmqNotificationAddresses {
+  rawtx?: string;
+  rawblock?: string;
   sequence?: string;
-  rawtx: string;
 }
 
-export async function getNotificationAddresses(): Promise<ZmqNotificationAddresses | undefined> {
-  const zmqNotifications = await getZmqNotifications();
-  if (!zmqNotifications) {
-    return undefined;
+export async function getNotificationAddresses(): Promise<ZmqNotificationAddresses> {
+  // Environments where getzmqnotifications returns bad values (i.e. Polar), can define
+  // the exact APP_BITCOIN_ZMQ_RAWTX_PORT and APP_BITCOIN_ZMQ_RAWBLOCK_PORT to be used.
+  // If APP_BITCOIN_ZMQ_RAWBLOCK_PORT is defined, BitcoindWatcher will listen to rawblock
+  // events (which have bigger payloads) than to sequence events. This is not preferable
+  // in production, but is also useful for development using Polar.
+  const zmqNotifications = (
+    process.env.APP_BITCOIN_ZMQ_RAWTX_PORT && process.env.APP_BITCOIN_ZMQ_RAWBLOCK_PORT
+      ? undefined
+      : await getZmqNotifications()
+  );
+  if (zmqNotifications) {
+    logger.info(`getNotificationAddresses: zmq-notifications: ${
+      JSON.stringify(zmqNotifications)
+    }`);
+  } else {
+    logger.info('getNotificationAddresses: no need for addresses');
   }
-  const rawtx = zmqNotifications.find(
+  const rawtx = zmqNotifications?.find(
     (zmqNotification) => (zmqNotification.type === 'pubrawtx'),
   )?.address;
-  if (!rawtx) {
-    return undefined;
-  }
-  const sequence = zmqNotifications.find(
+  const sequence = zmqNotifications?.find(
     (zmqNotification) => ['sequence', 'pubsequence'].includes(zmqNotification.type),
   )?.address;
   return {
-    sequence: sequence && fixLocalAddress(sequence),
-    rawtx: fixLocalAddress(rawtx),
+    ...process.env.APP_BITCOIN_ZMQ_RAWTX_PORT
+      ? {
+        rawtx: `tcp://${process.env.APP_BITCOIN_NODE_IP}:${process.env.APP_BITCOIN_ZMQ_RAWTX_PORT}`,
+      }
+      : {
+        rawtx: rawtx && fixLocalAddress(rawtx),
+      },
+    ...process.env.APP_BITCOIN_ZMQ_RAWBLOCK_PORT
+      ? {
+        rawblock: `tcp://${process.env.APP_BITCOIN_NODE_IP}:${process.env.APP_BITCOIN_ZMQ_RAWBLOCK_PORT}`,
+      }
+      : {
+        sequence: sequence && fixLocalAddress(sequence),
+      },
   };
 }

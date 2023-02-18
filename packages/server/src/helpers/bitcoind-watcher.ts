@@ -106,6 +106,25 @@ function txInStandardKey(parameters: Pick<TxInStandard, 'txid' | 'vout'>): strin
   return `${parameters.txid}:${parameters.vout}`;
 }
 
+const monitorListener = (socketName: string, eventName: string) => (
+  eventValue: number,
+  address: string,
+  error: unknown,
+) => {
+  logger.info(`${socketName}: monitor ${eventName} ${eventValue} ${errorString(error)}`);
+};
+
+const monitorInterval = 60_000;
+
+function monitorSocket(socketName: string, socket: zeromq.Socket): void {
+  for (const eventName of [
+    'connect', 'bind_error', 'accept_error', 'close', 'close_error', 'disconnect',
+  ]) {
+    socket.on(eventName, monitorListener(socketName, eventName));
+  }
+  socket.monitor(monitorInterval, 1);
+}
+
 class BitcoindWatcher extends EventEmitter {
   private delayedTriggerTimeout: ReturnType<typeof setTimeout> | undefined;
 
@@ -942,6 +961,9 @@ class BitcoindWatcher extends EventEmitter {
     if (!notificationAddresses) {
       throw new Error('The required zmq-notification addresses are not configured');
     }
+    logger.info(`BitcoindWatcher: zmq notification addresses: ${
+      JSON.stringify(notificationAddresses)
+    }`);
 
     this.analyzedBlockHashes = analyzedBlockHashes;
     for (const [txid, analysis] of watchedTransactions) {
@@ -966,6 +988,7 @@ class BitcoindWatcher extends EventEmitter {
           this.newBlockDebounce();
         }
       });
+      monitorSocket('sequenceNotificationSocket', this.sequenceNotificationSocket);
     }
     const majorRecheckInterval = setInterval(() => this.majorRecheck(), majorRecheckIntervalMs);
     majorRecheckInterval.unref();
@@ -988,6 +1011,7 @@ class BitcoindWatcher extends EventEmitter {
         );
       }
     });
+    monitorSocket('rawTransactionSocket', this.rawTransactionSocket);
     this.delayedTriggerTimeout = setTimeout(
       () => this.emit(BitcoindWatcherEventName.Trigger),
       delayedTriggerTimeoutMs,

@@ -6,7 +6,7 @@
 **/logs-*
 **/dist
 **/dev-*
-**/.env.dev-docker
+**/.env.dev-*
 **/Dockerfile-server-dev
 **/.git
 **/.vscode

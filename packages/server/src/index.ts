@@ -90,7 +90,9 @@ app.use((err, _req, res, _next) => {
   logger.info(`Starting ${AppName} v${AppVersion}, NODE_ENV: ${process.env.NODE_ENV}`);
   for (const envKey of [
     'MONGODB_URI', 'APP_SEED', 'APP_PASSWORD', 'APP_BITCOIN_NODE_IP', 'APP_BITCOIN_RPC_USER',
-    'APP_BITCOIN_RPC_PASS', 'APP_BITCOIN_RPC_PORT', 'APP_PORT',
+    'APP_BITCOIN_RPC_PASS', 'APP_BITCOIN_RPC_PORT', 'APP_PORT', 'APP_BITCOIN_ZMQ_RAWBLOCK_PORT',
+    'APP_BITCOIN_ZMQ_RAWTX_PORT', 'APP_LIGHTNING_NODE_IP', 'APP_LIGHTNING_NODE_GRPC_PORT',
+    'LND_READONLY_MACAROON_PATH', 'LND_TLS_PATH',
   ]) {
     logger.info(`Env var ${envKey} was ${process.env[envKey] ? 'found' : 'not found'}`);
   }

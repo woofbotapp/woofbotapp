@@ -163,6 +163,8 @@ class BitcoindWatcher extends EventEmitter {
 
   private sequenceNotificationSocket: zeromq.Socket | undefined;
 
+  private rawBlockSocket: zeromq.Socket | undefined;
+
   private rawTransactionSocket: zeromq.Socket | undefined;
 
   private shouldRerun = false;
@@ -958,12 +960,12 @@ class BitcoindWatcher extends EventEmitter {
     }
 
     const notificationAddresses = await getNotificationAddresses();
-    if (!notificationAddresses) {
-      throw new Error('The required zmq-notification addresses are not configured');
-    }
     logger.info(`BitcoindWatcher: zmq notification addresses: ${
       JSON.stringify(notificationAddresses)
     }`);
+    if (!notificationAddresses.rawtx) {
+      throw new Error('The required zmq-notification addresses do not contain rawtx');
+    }
 
     this.analyzedBlockHashes = analyzedBlockHashes;
     for (const [txid, analysis] of watchedTransactions) {
@@ -973,7 +975,21 @@ class BitcoindWatcher extends EventEmitter {
       this.watchedAddresses.set(watchedAddress, new Set());
     }
 
-    if (notificationAddresses.sequence) {
+    if (notificationAddresses.rawblock) {
+      logger.info('BitcoindWatcher: subscribing to rawblock zmq notifications');
+      this.rawBlockSocket = zeromq.socket('sub');
+      this.rawBlockSocket.connect(notificationAddresses.rawblock);
+      this.rawBlockSocket.subscribe('rawblock');
+      this.rawBlockSocket.on('message', (topicBuffer: Buffer) => {
+        const topic = topicBuffer.toString();
+        if (topic !== 'rawblock') {
+          return;
+        }
+        this.newBlockDebounce();
+      });
+      monitorSocket('rawBlockSocket', this.rawBlockSocket);
+    } else if (notificationAddresses.sequence) {
+      logger.info('BitcoindWatcher: subscribing to sequence zmq notifications');
       this.sequenceNotificationSocket = zeromq.socket('sub');
       this.sequenceNotificationSocket.connect(notificationAddresses.sequence);
       this.sequenceNotificationSocket.subscribe('sequence');
@@ -993,6 +1009,7 @@ class BitcoindWatcher extends EventEmitter {
     const majorRecheckInterval = setInterval(() => this.majorRecheck(), majorRecheckIntervalMs);
     majorRecheckInterval.unref();
 
+    logger.info('BitcoindWatcher: subscribing to rawtx zmq notifications');
     this.rawTransactionSocket = zeromq.socket('sub');
     this.rawTransactionSocket.connect(notificationAddresses.rawtx);
     this.rawTransactionSocket.subscribe('rawtx');

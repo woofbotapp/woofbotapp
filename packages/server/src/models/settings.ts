@@ -5,6 +5,11 @@ import { TimeFields } from '../helpers/mongo';
 
 type CommandsPermissionGroupsMap = Partial<Record<BotCommandName, string[]>>;
 
+export interface LndChannelInformation {
+  channelId: string; // "id" may conflict with mongodb stuff
+  lastActiveAt?: Date;
+}
+
 interface SettingsFields {
   migrationVersion: number;
   adminPasswordHash?: string;
@@ -15,6 +20,7 @@ interface SettingsFields {
   analyzedBlockHashes: string[];
   mempoolUrlPrefix: string;
   commandsPermissionGroups: CommandsPermissionGroupsMap;
+  lndChannels?: LndChannelInformation[];
 }
 
 const commandsPermissionGroupsSchema = new Schema<CommandsPermissionGroupsMap>(
@@ -29,6 +35,16 @@ const commandsPermissionGroupsSchema = new Schema<CommandsPermissionGroupsMap>(
   { _id: false },
 );
 
+const lndChannelSchema = new Schema<LndChannelInformation>(
+  {
+    channelId: { type: String, required: true },
+    lastActiveAt: { type: Date, required: false },
+  },
+  {
+    _id: false,
+  },
+);
+
 const schema = new Schema<SettingsFields & TimeFields>({
   migrationVersion: { type: Number, required: true },
   adminPasswordHash: { type: String, required: false },
@@ -39,6 +55,7 @@ const schema = new Schema<SettingsFields & TimeFields>({
   analyzedBlockHashes: { type: [String], required: true },
   mempoolUrlPrefix: { type: String, required: true },
   commandsPermissionGroups: { type: commandsPermissionGroupsSchema, required: true },
+  lndChannels: { type: [lndChannelSchema], required: false, default: undefined },
 }, { timestamps: true });
 
 export const defaultSettings: Omit<SettingsFields, 'migrationVersion'> = {

@@ -15,6 +15,7 @@ import { DecodedAuthToken } from './models/refresh-tokens';
 import telegramManager, { escapeMarkdown } from './helpers/telegram';
 import { UsersModel } from './models/users';
 import { bitcoindWatcher, TransactionAnalysis } from './helpers/bitcoind-watcher';
+import { lndWatcher } from './helpers/lnd-watcher';
 import { WatchedTransactionsModel } from './models/watched-transactions';
 import { WatchedAddressesModel } from './models/watched-addresses';
 import { priceWatcher } from './helpers/price-watcher';
@@ -140,6 +141,7 @@ app.use((err, _req, res, _next) => {
     [...analysisByTxid.entries()],
     [...new Set(watchedAddresses.map(({ address }) => address))],
   );
+  await lndWatcher.start();
   const watchRebootUsers = await UsersModel.find({ watchReboot: true });
   for await (const user of watchRebootUsers) {
     await telegramManager.sendMessage({

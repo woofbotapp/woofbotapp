@@ -23,6 +23,7 @@ import { errorString } from './error';
 import logger from './logger';
 import { zeroObjectId } from './mongo';
 import { PriceChangeEvent, priceWatcher, PriceWatcherEventName } from './price-watcher';
+import { LndChannelsStatusEvent, lndWatcher, LndWatcherEventName } from './lnd-watcher';
 
 interface TextMessage {
   text: string;
@@ -138,6 +139,10 @@ export class TelegrafManager {
     priceWatcher.on(
       PriceWatcherEventName.PriceChange,
       (event) => this.onPriceChange(event),
+    );
+    lndWatcher.on(
+      LndWatcherEventName.ChannelsStatus,
+      (event) => this.onLndChannelsStatus(event),
     );
   }
 
@@ -468,6 +473,62 @@ export class TelegrafManager {
       return;
     }
     this.handleNewTransactionAnalysis(parameters);
+  }
+
+  private async onLndChannelsStatus(event: LndChannelsStatusEvent) {
+    try {
+      logger.info(`onLndChannelsStatus: ${JSON.stringify(event)}`);
+      const settings = await SettingsModel.findByIdAndUpdate(
+        zeroObjectId,
+        {
+          $set: {
+            lndChannels: event.allChannels,
+          },
+        },
+      );
+      if (!settings) {
+        throw new Error('settings not found');
+      }
+      if (!settings.lndChannels) {
+        return;
+      }
+      if (event.addedChannels.length > 0) {
+        const openedChannelsUsers = await UsersModel.find({
+          watchLightningChannelsOpened: true,
+        });
+        const message = escapeMarkdown(`${
+          event.addedChannels.length === 1
+            ? '🤝 Woof! A new lightning channel was opened:'
+            : '🤝 Woof! New lightning channels were opened:'
+        } ${event.addedChannels.map((channel) => channel.channelId).join(', ')}`);
+        for (const user of openedChannelsUsers) {
+          // eslint-disable-next-line no-await-in-loop
+          await this.sendMessage({
+            chatId: user.telegramChatId,
+            text: message,
+          });
+        }
+      }
+      if (event.removedChannels.length > 0) {
+        const closedChannelsUsers = await UsersModel.find({
+          watchLightningChannelsClosed: true,
+        });
+        const message = escapeMarkdown(`${
+          event.removedChannels.length === 1
+            ? '🙌 Woof! A lightning channel was closed:'
+            : '🙌 Woof! Some lightning channels were closed:'
+        } ${event.removedChannels.map((channel) => channel.channelId).join(', ')}`);
+        for (const user of closedChannelsUsers) {
+          // eslint-disable-next-line no-await-in-loop
+          await this.sendMessage({
+            chatId: user.telegramChatId,
+            text: message,
+          });
+        }
+      }
+    } catch (error) {
+      logger.error(`onLndChannelsStatus: failed ${errorString(error)}`);
+    }
   }
 
   private async handleNewTransactionAnalysis({
@@ -1549,6 +1610,103 @@ export class TelegrafManager {
     ));
   }
 
+  static async [BotCommandName.WatchLightningChannelsOpened](ctx: TextContext, user: UserDocument) {
+    if (!lndWatcher.isRunning()) {
+      ctx.replyWithMarkdownV2(escapeMarkdown(
+        'Sorry, the LND integration is not configured.',
+      ));
+      return;
+    }
+    await UsersModel.updateOne(
+      {
+        _id: user._id,
+      },
+      {
+        $set: {
+          watchLightningChannelsOpened: true,
+        },
+      },
+    );
+    ctx.replyWithMarkdownV2(escapeMarkdown(
+      'Started watching for new lightning channels being opened.',
+    ));
+  }
+
+  static async [BotCommandName.UnwatchLightningChannelsOpened](
+    ctx: TextContext,
+    user: UserDocument,
+  ) {
+    if (!lndWatcher.isRunning()) {
+      ctx.replyWithMarkdownV2(escapeMarkdown(
+        'Sorry, the LND integration is not configured.',
+      ));
+      return;
+    }
+    await UsersModel.updateOne(
+      {
+        _id: user._id,
+      },
+      {
+        $set: {
+          watchLightningChannelsOpened: false,
+        },
+      },
+    );
+    ctx.replyWithMarkdownV2(escapeMarkdown(
+      'Started watching for new lightning channels being opened.',
+    ));
+  }
+
+  static async [BotCommandName.WatchLightningChannelsClosed](
+    ctx: TextContext,
+    user: UserDocument,
+  ) {
+    if (!lndWatcher.isRunning()) {
+      ctx.replyWithMarkdownV2(escapeMarkdown(
+        'Sorry, the LND integration is not configured.',
+      ));
+      return;
+    }
+    await UsersModel.updateOne(
+      {
+        _id: user._id,
+      },
+      {
+        $set: {
+          watchLightningChannelsClosed: true,
+        },
+      },
+    );
+    ctx.replyWithMarkdownV2(escapeMarkdown(
+      'Started watching for lightning channels being closed.',
+    ));
+  }
+
+  static async [BotCommandName.UnwatchLightningChannelsClosed](
+    ctx: TextContext,
+    user: UserDocument,
+  ) {
+    if (!lndWatcher.isRunning()) {
+      ctx.replyWithMarkdownV2(escapeMarkdown(
+        'Sorry, the LND integration is not configured.',
+      ));
+      return;
+    }
+    await UsersModel.updateOne(
+      {
+        _id: user._id,
+      },
+      {
+        $set: {
+          watchLightningChannelsClosed: false,
+        },
+      },
+    );
+    ctx.replyWithMarkdownV2(escapeMarkdown(
+      'Started watching for lightning channels being closed.',
+    ));
+  }
+
   static async [BotCommandName.Links](ctx: TextContext) {
     const replyToMessage = ctx.message.reply_to_message;
     if (!replyToMessage) {
@@ -1604,6 +1762,12 @@ export class TelegrafManager {
     }
     if (user.watchMempoolClear) {
       lines.push(escapeMarkdown('You are watching mempool becoming clear.'));
+    }
+    if (user.watchLightningChannelsOpened) {
+      lines.push(escapeMarkdown('You are watching lightning channels being opened.'));
+    }
+    if (user.watchLightningChannelsClosed) {
+      lines.push(escapeMarkdown('You are watching lightning channels being closed.'));
     }
     const watchedTransactions = await WatchedTransactionsModel.find({
       userId: user._id,

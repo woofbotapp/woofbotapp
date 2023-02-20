@@ -63,7 +63,11 @@ export const defaultSettings: Omit<SettingsFields, 'migrationVersion'> = {
   bestBlockHeight: 0,
   analyzedBlockHashes: [],
   mempoolUrlPrefix: 'https://mempool.space',
-  commandsPermissionGroups: {},
+  commandsPermissionGroups: {
+    // Commands that by default not allowed to anyone
+    [BotCommandName.WatchLightningChannelsOpened]: [],
+    [BotCommandName.WatchLightningChannelsClosed]: [],
+  },
 };
 
 export const SettingsModel = model('settings', schema);

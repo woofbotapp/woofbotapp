@@ -26,6 +26,10 @@ export enum BotCommandName {
   UnwatchNewBlocks = 'unwatchnewblocks',
   WatchMempoolClear = 'watchmempoolclear',
   UnwatchMempoolClear = 'unwatchmempoolclear',
+  WatchLightningChannelsOpened = 'watchlightningchannelsopened',
+  UnwatchLightningChannelsOpened = 'unwatchlightningchannelsopened',
+  WatchLightningChannelsClosed = 'watchlightningchannelsclosed',
+  UnwatchLightningChannelsClosed = 'unwatchlightningchannelsclosed',
   ListWatches = 'listwatches',
   Links = 'links',
 }
@@ -146,6 +150,26 @@ export const telegramCommands: BotCommand[] = [
   {
     name: BotCommandName.UnwatchMempoolClear,
     description: `Stop getting notifications of /${BotCommandName.WatchMempoolClear}.`,
+    alwaysPermitted: true,
+  },
+  {
+    name: BotCommandName.WatchLightningChannelsOpened,
+    description: 'Get notification when a lightning channel is opened',
+    alwaysPermitted: false,
+  },
+  {
+    name: BotCommandName.UnwatchLightningChannelsOpened,
+    description: `Stop getting notifications of /${BotCommandName.WatchLightningChannelsOpened}.`,
+    alwaysPermitted: true,
+  },
+  {
+    name: BotCommandName.WatchLightningChannelsClosed,
+    description: 'Get notification when a lightning channel is closed',
+    alwaysPermitted: false,
+  },
+  {
+    name: BotCommandName.UnwatchLightningChannelsClosed,
+    description: `Stop getting notifications of /${BotCommandName.WatchLightningChannelsClosed}.`,
     alwaysPermitted: true,
   },
   {

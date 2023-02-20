@@ -61,8 +61,35 @@ async function migrateV3(): Promise<void> {
   );
 }
 
+async function migrateV4(): Promise<void> {
+  await UsersModel.updateMany(
+    {
+      watchLightningChannelsOpened: {
+        $exists: false,
+      },
+    },
+    {
+      $set: {
+        watchLightningChannelsOpened: false,
+      },
+    },
+  );
+  await UsersModel.updateMany(
+    {
+      watchLightningChannelsClosed: {
+        $exists: false,
+      },
+    },
+    {
+      $set: {
+        watchLightningChannelsClosed: false,
+      },
+    },
+  );
+}
+
 const migrations = [
-  migrateV0, migrateV1, migrateV2, migrateV3,
+  migrateV0, migrateV1, migrateV2, migrateV3, migrateV4,
 ];
 
 export const migrationsLength = migrations.length;

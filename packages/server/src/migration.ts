@@ -1,3 +1,5 @@
+import { BotCommandName } from '@woofbot/common';
+
 import logger from './helpers/logger';
 import { zeroObjectId } from './helpers/mongo';
 import { SettingsModel } from './models/settings';
@@ -88,8 +90,22 @@ async function migrateV4(): Promise<void> {
   );
 }
 
+async function migrateV5(): Promise<void> {
+  await SettingsModel.updateOne(
+    {
+      _id: zeroObjectId,
+    },
+    {
+      $set: {
+        [`commandsPermissionGroups.${BotCommandName.WatchLightningChannelsOpened}`]: [],
+        [`commandsPermissionGroups.${BotCommandName.WatchLightningChannelsClosed}`]: [],
+      },
+    },
+  );
+}
+
 const migrations = [
-  migrateV0, migrateV1, migrateV2, migrateV3, migrateV4,
+  migrateV0, migrateV1, migrateV2, migrateV3, migrateV4, migrateV5,
 ];
 
 export const migrationsLength = migrations.length;

@@ -10,6 +10,8 @@ export interface UserFields {
   watchNewBlocks: boolean;
   watchPriceChange?: number;
   watchMempoolClear: boolean;
+  watchLightningChannelsOpened: boolean;
+  watchLightningChannelsClosed: boolean;
   permissionGroups: string[];
 }
 
@@ -21,6 +23,8 @@ const schema = new Schema<UserFields & TimeFields>({
   watchNewBlocks: { type: Boolean, required: true, index: true },
   watchPriceChange: { type: Number, required: false, index: true },
   watchMempoolClear: { type: Boolean, required: true, index: true },
+  watchLightningChannelsOpened: { type: Boolean, required: true, index: true },
+  watchLightningChannelsClosed: { type: Boolean, required: true, index: true },
   permissionGroups: { type: [String], required: true, index: true },
 }, { timestamps: true });
 
@@ -32,6 +36,8 @@ export const defaultUserProperties: Omit<
   watchReboot: false,
   watchNewBlocks: false,
   watchMempoolClear: false,
+  watchLightningChannelsOpened: false,
+  watchLightningChannelsClosed: false,
   permissionGroups: [],
 };
 

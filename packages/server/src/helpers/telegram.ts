@@ -1600,7 +1600,7 @@ export class TelegrafManager {
         _id: user._id,
       },
       {
-        $unset: {
+        $set: {
           watchMempoolClear: false,
         },
       },

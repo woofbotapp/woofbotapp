@@ -104,8 +104,23 @@ async function migrateV5(): Promise<void> {
   );
 }
 
+async function migrateV6(): Promise<void> {
+  await UsersModel.updateMany(
+    {
+      watchMempoolClear: {
+        $exists: false,
+      },
+    },
+    {
+      $set: {
+        watchMempoolClear: false,
+      },
+    },
+  );
+}
+
 const migrations = [
-  migrateV0, migrateV1, migrateV2, migrateV3, migrateV4, migrateV5,
+  migrateV0, migrateV1, migrateV2, migrateV3, migrateV4, migrateV5, migrateV6,
 ];
 
 export const migrationsLength = migrations.length;

@@ -1079,11 +1079,9 @@ export class TelegrafManager {
     ));
   }
 
-  static async [BotCommandName.WatchReboot](ctx: TextContext) {
-    const found = await UsersModel.findOneAndUpdate(
-      {
-        telegramFromId: ctx.from?.id ?? '',
-      },
+  static async [BotCommandName.WatchReboot](ctx: TextContext, user: UserDocument) {
+    const found = await UsersModel.findByIdAndUpdate(
+      user._id,
       {
         $set: {
           watchReboot: true,
@@ -1097,11 +1095,9 @@ export class TelegrafManager {
     ctx.replyWithMarkdownV2(escapeMarkdown('Started watching reboots.'));
   }
 
-  static async [BotCommandName.UnwatchReboot](ctx: TextContext) {
-    const found = await UsersModel.findOneAndUpdate(
-      {
-        telegramFromId: ctx.from?.id ?? '',
-      },
+  static async [BotCommandName.UnwatchReboot](ctx: TextContext, user: UserDocument) {
+    const found = await UsersModel.findByIdAndUpdate(
+      user._id,
       {
         $set: {
           watchReboot: false,
@@ -1115,16 +1111,14 @@ export class TelegrafManager {
     ctx.replyWithMarkdownV2(escapeMarkdown('Stopped watching reboots.'));
   }
 
-  static async [BotCommandName.WatchNewBlocks](ctx: TextContext) {
+  static async [BotCommandName.WatchNewBlocks](ctx: TextContext, user: UserDocument) {
     const settings = await SettingsModel.findById(zeroObjectId);
     if (!settings) {
       ctx.replyWithMarkdownV2(notFoundMessage);
       return;
     }
-    const found = await UsersModel.findOneAndUpdate(
-      {
-        telegramFromId: ctx.from?.id ?? '',
-      },
+    const found = await UsersModel.findByIdAndUpdate(
+      user._id,
       {
         $set: {
           watchNewBlocks: true,
@@ -1140,11 +1134,9 @@ export class TelegrafManager {
     ));
   }
 
-  static async [BotCommandName.UnwatchNewBlocks](ctx: TextContext) {
-    const found = await UsersModel.findOneAndUpdate(
-      {
-        telegramFromId: ctx.from?.id ?? '',
-      },
+  static async [BotCommandName.UnwatchNewBlocks](ctx: TextContext, user: UserDocument) {
+    const found = await UsersModel.findByIdAndUpdate(
+      user._id,
       {
         $set: {
           watchNewBlocks: false,
@@ -1805,11 +1797,11 @@ export class TelegrafManager {
     ctx.replyWithMarkdownV2(lines.join('\n'));
   }
 
-  static async [BotCommandName.Quit](ctx: TextContext) {
-    const user = await deleteUser({
-      telegramFromId: ctx.from?.id ?? '',
+  static async [BotCommandName.Quit](ctx: TextContext, user: UserDocument) {
+    const found = await deleteUser({
+      _id: user._id,
     });
-    if (!user) {
+    if (!found) {
       ctx.replyWithMarkdownV2(notFoundMessage);
       return;
     }

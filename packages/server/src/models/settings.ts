@@ -21,6 +21,8 @@ interface SettingsFields {
   mempoolUrlPrefix: string;
   commandsPermissionGroups: CommandsPermissionGroupsMap;
   lndChannels?: LndChannelInformation[];
+  lndLastForwardAt?: Date;
+  lndLastForwardCount?: number;
 }
 
 const commandsPermissionGroupsSchema = new Schema<CommandsPermissionGroupsMap>(
@@ -56,6 +58,8 @@ const schema = new Schema<SettingsFields & TimeFields>({
   mempoolUrlPrefix: { type: String, required: true },
   commandsPermissionGroups: { type: commandsPermissionGroupsSchema, required: true },
   lndChannels: { type: [lndChannelSchema], required: false, default: undefined },
+  lndLastForwardAt: { type: Date, required: false },
+  lndLastForwardCount: { type: Number, required: false },
 }, { timestamps: true });
 
 export const defaultSettings: Omit<SettingsFields, 'migrationVersion'> = {

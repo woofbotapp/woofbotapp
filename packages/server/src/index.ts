@@ -141,7 +141,11 @@ app.use((err, _req, res, _next) => {
     [...analysisByTxid.entries()],
     [...new Set(watchedAddresses.map(({ address }) => address))],
   );
-  await lndWatcher.start(settings.lndChannels);
+  await lndWatcher.start({
+    savedChannels: settings.lndChannels,
+    lastForwardAt: settings.lndLastForwardAt ?? new Date(),
+    lastForwardCount: settings.lndLastForwardCount ?? 0,
+  });
   const watchRebootUsers = await UsersModel.find({ watchReboot: true });
   for await (const user of watchRebootUsers) {
     await telegramManager.sendMessage({

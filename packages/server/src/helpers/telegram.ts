@@ -1645,7 +1645,7 @@ export class TelegrafManager {
       },
     );
     ctx.replyWithMarkdownV2(escapeMarkdown(
-      'Started watching for new lightning channels being opened.',
+      'Stopped watching for new lightning channels being opened.',
     ));
   }
 
@@ -1695,7 +1695,7 @@ export class TelegrafManager {
       },
     );
     ctx.replyWithMarkdownV2(escapeMarkdown(
-      'Started watching for lightning channels being closed.',
+      'Stopped watching for lightning channels being closed.',
     ));
   }
 

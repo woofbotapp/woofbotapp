@@ -11,7 +11,7 @@ import TableRow from '@mui/material/TableRow';
 import CircularProgressIcon from '@mui/material/CircularProgress';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import Typography from '@mui/material/Typography';
-import { permissionGroupNameRegex } from '@woofbot/common';
+import { permissionGroupNameRegex, prettyDate } from '@woofbot/common';
 import { MuiChipsInput } from 'mui-chips-input';
 import { Link, useParams } from 'react-router-dom';
 
@@ -21,7 +21,6 @@ import {
 } from '../../api/users';
 import { arraysEqual } from '../../utils/array-utils';
 import { HttpError } from '../../utils/api';
-import { prettyDate } from '../../utils/date-utils';
 import { errorToast } from '../../utils/toast';
 import { pageRoutes } from '../../routes';
 import Copyright from '../copyright/Copyright';

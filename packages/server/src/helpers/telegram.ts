@@ -1,5 +1,5 @@
 import {
-  TelegramStatus, telegramCommands, BotCommand, BotCommandName,
+  TelegramStatus, telegramCommands, BotCommand, BotCommandName, mSatsToSats, prettyDate,
 } from '@woofbot/common';
 import { Context, Telegraf, TelegramError } from 'telegraf';
 import { validate } from 'bitcoin-address-validation';
@@ -23,7 +23,9 @@ import { errorString } from './error';
 import logger from './logger';
 import { zeroObjectId } from './mongo';
 import { PriceChangeEvent, priceWatcher, PriceWatcherEventName } from './price-watcher';
-import { LndChannelsStatusEvent, lndWatcher, LndWatcherEventName } from './lnd-watcher';
+import {
+  LndChannelsStatusEvent, LndNewForwardsEvent, lndWatcher, LndWatcherEventName,
+} from './lnd-watcher';
 
 interface TextMessage {
   text: string;
@@ -143,6 +145,10 @@ export class TelegrafManager {
     lndWatcher.on(
       LndWatcherEventName.ChannelsStatus,
       (event) => this.onLndChannelsStatus(event),
+    );
+    lndWatcher.on(
+      LndWatcherEventName.NewForwards,
+      (event) => this.onLndNewForwards(event),
     );
   }
 
@@ -528,6 +534,59 @@ export class TelegrafManager {
       }
     } catch (error) {
       logger.error(`onLndChannelsStatus: failed ${errorString(error)}`);
+    }
+  }
+
+  private async onLndNewForwards(event: LndNewForwardsEvent) {
+    try {
+      logger.info(`onLndNewForwards: ${JSON.stringify(event)}`);
+      const settings = await SettingsModel.findByIdAndUpdate(
+        zeroObjectId,
+        {
+          $set: {
+            lndLastForwardAt: event.lastForwardAt,
+            lndLastForwardCount: event.lastForwardCount,
+          },
+        },
+      );
+      if (!settings) {
+        throw new Error('settings not found');
+      }
+      if (event.forwards.length === 0 && !event.tooMany) {
+        return;
+      }
+      const users = await UsersModel.find({
+        watchLightningForwards: true,
+      });
+      const message = escapeMarkdown(
+        event.forwards.length > 0
+          ? `✨ Woof! You have earned lightning fees: ${
+            event.forwards.map((forward) => `丰${
+              mSatsToSats(forward.fee_mtokens)
+            } for forwarding 丰${
+              mSatsToSats(forward.mtokens)
+            } at ${
+              prettyDate(forward.createdAt.toJSON())
+            } from channel ${
+              forward.incoming_channel
+            } to channel ${
+              forward.outgoing_channel
+            }`).join(', ')
+          }${event.tooMany
+            ? '\n, and there were more forwardings, too many to display here.'
+            : ''
+          }`
+          : '✨ Woof! There were too many forwardings at the same second to display here.',
+      );
+      for (const user of users) {
+        // eslint-disable-next-line no-await-in-loop
+        await this.sendMessage({
+          chatId: user.telegramChatId,
+          text: message,
+        });
+      }
+    } catch (error) {
+      logger.error(`onLndNewForwards: failed ${errorString(error)}`);
     }
   }
 
@@ -1699,6 +1758,56 @@ export class TelegrafManager {
     ));
   }
 
+  static async [BotCommandName.WatchLightningForwards](
+    ctx: TextContext,
+    user: UserDocument,
+  ) {
+    if (!lndWatcher.isRunning()) {
+      ctx.replyWithMarkdownV2(escapeMarkdown(
+        'Sorry, the LND integration is not configured.',
+      ));
+      return;
+    }
+    await UsersModel.updateOne(
+      {
+        _id: user._id,
+      },
+      {
+        $set: {
+          watchLightningForwards: true,
+        },
+      },
+    );
+    ctx.replyWithMarkdownV2(escapeMarkdown(
+      'Started watching for lightning forwards.',
+    ));
+  }
+
+  static async [BotCommandName.UnwatchLightningForwards](
+    ctx: TextContext,
+    user: UserDocument,
+  ) {
+    if (!lndWatcher.isRunning()) {
+      ctx.replyWithMarkdownV2(escapeMarkdown(
+        'Sorry, the LND integration is not configured.',
+      ));
+      return;
+    }
+    await UsersModel.updateOne(
+      {
+        _id: user._id,
+      },
+      {
+        $set: {
+          watchLightningForwards: false,
+        },
+      },
+    );
+    ctx.replyWithMarkdownV2(escapeMarkdown(
+      'Stopped watching for lightning forwards.',
+    ));
+  }
+
   static async [BotCommandName.Links](ctx: TextContext) {
     const replyToMessage = ctx.message.reply_to_message;
     if (!replyToMessage) {
@@ -1760,6 +1869,9 @@ export class TelegrafManager {
     }
     if (user.watchLightningChannelsClosed) {
       lines.push(escapeMarkdown('You are watching lightning channels being closed.'));
+    }
+    if (user.watchLightningForwards) {
+      lines.push(escapeMarkdown('You are watching lightning forwards.'));
     }
     const watchedTransactions = await WatchedTransactionsModel.find({
       userId: user._id,

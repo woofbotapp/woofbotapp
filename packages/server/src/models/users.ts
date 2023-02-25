@@ -12,6 +12,7 @@ export interface UserFields {
   watchMempoolClear: boolean;
   watchLightningChannelsOpened: boolean;
   watchLightningChannelsClosed: boolean;
+  watchLightningForwards: boolean;
   permissionGroups: string[];
 }
 
@@ -25,6 +26,7 @@ const schema = new Schema<UserFields & TimeFields>({
   watchMempoolClear: { type: Boolean, required: true, index: true },
   watchLightningChannelsOpened: { type: Boolean, required: true, index: true },
   watchLightningChannelsClosed: { type: Boolean, required: true, index: true },
+  watchLightningForwards: { type: Boolean, required: true, index: true },
   permissionGroups: { type: [String], required: true, index: true },
 }, { timestamps: true });
 
@@ -38,6 +40,7 @@ export const defaultUserProperties: Omit<
   watchMempoolClear: false,
   watchLightningChannelsOpened: false,
   watchLightningChannelsClosed: false,
+  watchLightningForwards: false,
   permissionGroups: [],
 };
 

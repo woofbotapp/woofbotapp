@@ -71,6 +71,7 @@ export const defaultSettings: Omit<SettingsFields, 'migrationVersion'> = {
     // Commands that by default not allowed to anyone
     [BotCommandName.WatchLightningChannelsOpened]: [],
     [BotCommandName.WatchLightningChannelsClosed]: [],
+    [BotCommandName.WatchLightningForwards]: [],
   },
 };
 

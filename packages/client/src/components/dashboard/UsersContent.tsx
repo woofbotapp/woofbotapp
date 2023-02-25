@@ -17,11 +17,11 @@ import DialogContent from '@mui/material/DialogContent';
 import DialogContentText from '@mui/material/DialogContentText';
 import DialogTitle from '@mui/material/DialogTitle';
 import Typography from '@mui/material/Typography';
+import { prettyDate } from '@woofbot/common';
 import { Link } from 'react-router-dom';
 
 import { useMutationDeleteUser, useUsers } from '../../api/users';
 import { pageRoutes } from '../../routes';
-import { prettyDate } from '../../utils/date-utils';
 import Copyright from '../copyright/Copyright';
 import Title from './Title';
 import { emptyTableCell } from './emptyTableCell';

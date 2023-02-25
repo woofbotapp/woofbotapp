@@ -1,3 +1,6 @@
+export { prettyDate } from './date-utils';
+export { mSatsToSats } from './string-utils';
+
 export const AppName = 'WoofBot';
 
 export const AppVersion = '%VERSION%'; // will be replaced by post-build script
@@ -30,6 +33,8 @@ export enum BotCommandName {
   UnwatchLightningChannelsOpened = 'unwatchlightningchannelsopened',
   WatchLightningChannelsClosed = 'watchlightningchannelsclosed',
   UnwatchLightningChannelsClosed = 'unwatchlightningchannelsclosed',
+  WatchLightningForwards = 'watchlightningforwards',
+  UnwatchLightningForwards = 'unwatchlightningforwards',
   ListWatches = 'listwatches',
   Links = 'links',
 }
@@ -154,7 +159,7 @@ export const telegramCommands: BotCommand[] = [
   },
   {
     name: BotCommandName.WatchLightningChannelsOpened,
-    description: 'Get notification when a lightning channel is opened',
+    description: 'Get notification when a lightning channel is opened.',
     alwaysPermitted: false,
   },
   {
@@ -164,12 +169,22 @@ export const telegramCommands: BotCommand[] = [
   },
   {
     name: BotCommandName.WatchLightningChannelsClosed,
-    description: 'Get notification when a lightning channel is closed',
+    description: 'Get notification when a lightning channel is closed.',
     alwaysPermitted: false,
   },
   {
     name: BotCommandName.UnwatchLightningChannelsClosed,
     description: `Stop getting notifications of /${BotCommandName.WatchLightningChannelsClosed}.`,
+    alwaysPermitted: true,
+  },
+  {
+    name: BotCommandName.WatchLightningForwards,
+    description: 'Get notification when a lightning payment is forwarded through your node.',
+    alwaysPermitted: false,
+  },
+  {
+    name: BotCommandName.UnwatchLightningForwards,
+    description: `Stop getting notifications of /${BotCommandName.WatchLightningForwards}.`,
     alwaysPermitted: true,
   },
   {

@@ -119,8 +119,33 @@ async function migrateV6(): Promise<void> {
   );
 }
 
+async function migrateV7(): Promise<void> {
+  await UsersModel.updateMany(
+    {
+      watchLightningForwards: {
+        $exists: false,
+      },
+    },
+    {
+      $set: {
+        watchLightningForwards: false,
+      },
+    },
+  );
+  await SettingsModel.updateOne(
+    {
+      _id: zeroObjectId,
+    },
+    {
+      $set: {
+        [`commandsPermissionGroups.${BotCommandName.WatchLightningForwards}`]: [],
+      },
+    },
+  );
+}
+
 const migrations = [
-  migrateV0, migrateV1, migrateV2, migrateV3, migrateV4, migrateV5, migrateV6,
+  migrateV0, migrateV1, migrateV2, migrateV3, migrateV4, migrateV5, migrateV6, migrateV7,
 ];
 
 export const migrationsLength = migrations.length;

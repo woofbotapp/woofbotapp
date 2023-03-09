@@ -47,11 +47,10 @@ function prettyBlockHash(blockHash: string): string {
 const sponsorship = `\n\n*Follow us on Twitter: [@woofbotapp](https://twitter.com/woofbotapp)*`;
 
 const startMessage = `${escapeMarkdown(`\
-🐶 Welcome to WoofBot, your personal telegram bot that will send you customized alerts.
-By default, your user is configured to get alerts whenever your server reboots.
+🐶 Welcome to WoofBot, your personal telegram bot that will send you customized notifications.
+For example, to get a notification whenever the server reboots, call /watchreboot.
 To unset this configuration, call /unwatchreboot.
-To start watching reboots events again, call /watchreboot.
-For more information, call /help.`)}${sponsorship}`;
+For a list of all commands, call /help.`)}${sponsorship}`;
 
 const notFoundMessage = escapeMarkdown('Woof! Call /start first.');
 

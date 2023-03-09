@@ -294,7 +294,7 @@ export default function GeneralSettings() {
                 placeholder="e.g. https://mempool.space"
               />
             }
-            label={`Mempool block explorer url (for the /{BotCommandName.Links} command):`}
+            label={`Mempool block explorer url (for the /${BotCommandName.Links} command):`}
           />
         </Box>
       </Box>

@@ -380,6 +380,21 @@ function UserContentByUserId({
                     {' '}
                     {data.data.attributes.watchMempoolClear ? 'On' : 'Off'}
                   </Typography>
+                  <Typography component="p">
+                    Watch lightning channels:
+                    {' '}
+                    {
+                      [
+                        ...data.data.attributes.watchLightningChannelsOpened ? ['Opened'] : [],
+                        ...data.data.attributes.watchLightningChannelsClosed ? ['Closed'] : [],
+                      ].join(' & ') || 'Never'
+                    }
+                  </Typography>
+                  <Typography component="p">
+                    Watch lightning forwards:
+                    {' '}
+                    {data.data.attributes.watchLightningForwards ? 'On' : 'Off'}
+                  </Typography>
                 </Paper>
               </Grid>
               <Grid item xs={12}>

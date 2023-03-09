@@ -14,6 +14,9 @@ interface UserAttributes {
   watchNewBlocks: boolean;
   watchPriceChange?: number;
   watchMempoolClear: boolean;
+  watchLightningChannelsOpened: boolean;
+  watchLightningChannelsClosed: boolean;
+  watchLightningForwards: boolean;
   permissionGroups: string[];
   createdAt: string;
   updatedAt: string;

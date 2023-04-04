@@ -1137,7 +1137,7 @@ export class TelegrafManager {
     ));
   }
 
-  static async [BotCommandName.WatchReboot](ctx: TextContext, user: UserDocument) {
+  static async watchreboot(ctx: TextContext, user: UserDocument) {
     const found = await UsersModel.findByIdAndUpdate(
       user._id,
       {
@@ -1169,7 +1169,7 @@ export class TelegrafManager {
     ctx.replyWithMarkdownV2(escapeMarkdown('Stopped watching reboots.'));
   }
 
-  static async [BotCommandName.WatchNewBlocks](ctx: TextContext, user: UserDocument) {
+  static async watchnewblocks(ctx: TextContext, user: UserDocument) {
     const settings = await SettingsModel.findById(zeroObjectId);
     if (!settings) {
       ctx.replyWithMarkdownV2(notFoundMessage);
@@ -1208,7 +1208,7 @@ export class TelegrafManager {
     ctx.replyWithMarkdownV2(escapeMarkdown('Stopped watching new blocks.'));
   }
 
-  async [BotCommandName.WatchTransaction](ctx: TextContext, user: UserDocument, args: string[]) {
+  async watchtransaction(ctx: TextContext, user: UserDocument, args: string[]) {
     if (args.length > 1) {
       ctx.replyWithMarkdownV2(escapeMarkdown('Too many parameters'));
       return;
@@ -1416,7 +1416,7 @@ export class TelegrafManager {
     ));
   }
 
-  static async [BotCommandName.WatchAddresses](
+  static async watchaddresses(
     ctx: TextContext,
     user: UserDocument,
     args: string[],
@@ -1549,7 +1549,7 @@ export class TelegrafManager {
     ));
   }
 
-  static async [BotCommandName.WatchPriceChange](
+  static async watchpricechange(
     ctx: TextContext,
     user: UserDocument,
     args: string[],
@@ -1617,7 +1617,7 @@ export class TelegrafManager {
     }
   }
 
-  static async [BotCommandName.WatchMempoolClear](ctx: TextContext, user: UserDocument) {
+  static async watchmempoolclear(ctx: TextContext, user: UserDocument) {
     await UsersModel.updateOne(
       {
         _id: user._id,
@@ -1660,7 +1660,7 @@ export class TelegrafManager {
     ));
   }
 
-  static async [BotCommandName.WatchLightningChannelsOpened](ctx: TextContext, user: UserDocument) {
+  static async watchlightningchannelsopened(ctx: TextContext, user: UserDocument) {
     if (!lndWatcher.isRunning()) {
       ctx.replyWithMarkdownV2(escapeMarkdown(
         'Sorry, the LND integration is not configured.',
@@ -1707,7 +1707,7 @@ export class TelegrafManager {
     ));
   }
 
-  static async [BotCommandName.WatchLightningChannelsClosed](
+  static async watchlightningchannelsclosed(
     ctx: TextContext,
     user: UserDocument,
   ) {
@@ -1757,7 +1757,7 @@ export class TelegrafManager {
     ));
   }
 
-  static async [BotCommandName.WatchLightningForwards](
+  static async watchlightningforwards(
     ctx: TextContext,
     user: UserDocument,
   ) {

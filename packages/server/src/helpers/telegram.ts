@@ -1,5 +1,6 @@
 import {
   TelegramStatus, telegramCommands, BotCommand, BotCommandName, mSatsToSats, prettyDate,
+  WatchName, watches, watchByName,
 } from '@woofbot/common';
 import { Context, Telegraf, TelegramError } from 'telegraf';
 import { validate } from 'bitcoin-address-validation';
@@ -1137,6 +1138,69 @@ export class TelegrafManager {
     ));
   }
 
+  async [BotCommandName.Watch](
+    ctx: TextContext,
+    user: UserDocument,
+    args: string[],
+  ): Promise<void | undefined> {
+    if (args.length === 0) {
+      ctx.replyWithMarkdownV2(
+        escapeMarkdown('Which events would you like to get notifications for?'),
+        {
+          reply_markup: {
+            keyboard: watches.map(
+              (watch) => [{ text: `/watch ${watch.name}` }],
+            ),
+          },
+        },
+      );
+      return undefined;
+    }
+    const [watchName, ...leftArgs] = args;
+    const watch = watchByName.get(watchName as WatchName);
+    if (!watch) {
+      ctx.replyWithMarkdownV2(
+        escapeMarkdown('Unrecognized event-name to watch'),
+      );
+      return undefined;
+    }
+    if (leftArgs.length === 0 && watch?.watchParametersRequestMessage) {
+      await ctx.replyWithMarkdownV2(
+        escapeMarkdown(watch?.watchParametersRequestMessage),
+        {
+          reply_markup: {
+            force_reply: true,
+          },
+        },
+      );
+      return undefined;
+    }
+    // TODO: verify permission
+    switch (watch.name) {
+      case WatchName.Reboot:
+        return TelegrafManager.watchreboot(ctx, user);
+      case WatchName.Transaction:
+        return this.watchtransaction(ctx, user, leftArgs);
+      case WatchName.Addresses:
+        return TelegrafManager.watchaddresses(ctx, user, leftArgs);
+      case WatchName.PriceChange:
+        return TelegrafManager.watchpricechange(ctx, user, leftArgs);
+      case WatchName.NewBlocks:
+        return TelegrafManager.watchnewblocks(ctx, user);
+      case WatchName.MempoolClear:
+        return TelegrafManager.watchmempoolclear(ctx, user);
+      case WatchName.LightningChannelsOpened:
+        return TelegrafManager.watchlightningchannelsopened(ctx, user);
+      case WatchName.LightningChannelsClosed:
+        return TelegrafManager.watchlightningchannelsclosed(ctx, user);
+      case WatchName.LightningForwards:
+        return TelegrafManager.watchlightningforwards(ctx, user);
+      default:
+        break;
+    }
+    return undefined;
+  }
+
   static async watchreboot(ctx: TextContext, user: UserDocument) {
     const found = await UsersModel.findByIdAndUpdate(
       user._id,
@@ -1216,7 +1280,7 @@ export class TelegrafManager {
     const parts = args[0].split(':');
     const txid = parts.pop();
     if (!txid || (txid.length !== 64) || !/^[0-9a-f]{64}$/.test(txid)) {
-      ctx.replyWithMarkdownV2(`Invalid transaction id - expected 64 hex chars in lowecase.`);
+      ctx.replyWithMarkdownV2(escapeMarkdown('Invalid transaction id - expected 64 hex chars in lowecase.'));
       return;
     }
     const nickname = parts.join(':');
@@ -1555,10 +1619,9 @@ export class TelegrafManager {
     args: string[],
   ) {
     if (args.length > 1) {
-      const [commandName] = ctx.message.text.split(/\s+/);
       ctx.replyWithMarkdownV2(escapeMarkdown([
-        `Syntax: "${commandName} <price-delta-in-usd>"`,
-        `i.e. To get a notification when the price changes by $1000, use "${commandName} 1000".`,
+        'Syntax: "/watch price-change <price-delta-in-usd>"',
+        'i.e. To get a notification when the price changes by $1000, use "/watch price-change 1000".',
       ].join('\n')));
       return;
     }

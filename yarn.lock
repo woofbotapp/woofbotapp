@@ -9169,10 +9169,10 @@ nocache@^3.0.4:
   resolved "https://registry.yarnpkg.com/nocache/-/nocache-3.0.4.tgz#5b37a56ec6e09fc7d401dceaed2eab40c8bfdf79"
   integrity sha512-WDD0bdg9mbq6F4mRxEYcPWwfA1vxd0mrvKOyxI7Xj/atfRHVeutzuWByG//jfm4uPzp0y4Kj051EORCBSQMycw==
 
-node-fetch@^2.6.7:
-  version "2.6.7"
-  resolved "https://registry.yarnpkg.com/node-fetch/-/node-fetch-2.6.7.tgz#24de9fba827e3b4ae44dc8b20256a379160052ad"
-  integrity sha512-ZjMPFEfVx5j+y2yF35Kzx5sF7kDzxuDj6ziH4FFbOp87zKDZNx8yExJIb05OGF4Nlt9IHFIMBkRl41VdvcNdbQ==
+node-fetch@^2.6.8:
+  version "2.6.9"
+  resolved "https://registry.yarnpkg.com/node-fetch/-/node-fetch-2.6.9.tgz#7c7f744b5cc6eb5fd404e0c7a9fec630a55657e6"
+  integrity sha512-DJm/CJkZkRjKKj4Zi4BsKVZh3ValV5IR5s7LVZnW+6YMh0W1BfNA8XSs6DLMGYlId5F3KnA70uu2qepcR08Qqg==
   dependencies:
     whatwg-url "^5.0.0"
 
@@ -11598,19 +11598,19 @@ tapable@^2.0.0, tapable@^2.1.1, tapable@^2.2.0:
   resolved "https://registry.yarnpkg.com/tapable/-/tapable-2.2.1.tgz#1967a73ef4060a82f12ab96af86d52fdb76eeca0"
   integrity sha512-GNzQvQTOIP6RyTfE2Qxb8ZVlNmw0n88vp1szwWRimP02mnTsx3Wtn5qRdqY9w2XduFNUgvOwhNnQsjwCp+kqaQ==
 
-telegraf@^4.11.2:
-  version "4.11.2"
-  resolved "https://registry.yarnpkg.com/telegraf/-/telegraf-4.11.2.tgz#1cf4e74418b4fb6eaddd11a74cc50b0971c06c35"
-  integrity sha512-RGEh+NXkHbq1KcSSbJeVYhHMrEN4rymd9DSe3SoIV0886bJPBHLzYCNrOqnk9aeZE2Idwh5uK0X/xbR6jScQKQ==
+telegraf@^4.12.2:
+  version "4.12.2"
+  resolved "https://registry.yarnpkg.com/telegraf/-/telegraf-4.12.2.tgz#1cf4f38c275e04416f1282f3581833994870f0bc"
+  integrity sha512-PgwqI4wD86cMqVfFtEM9JkGGnMHgvgLJbReZMmwW4z35QeOi4DvbdItONld4bPnYn3A1jcO0SRKs0BXmR+x+Ew==
   dependencies:
     abort-controller "^3.0.0"
     debug "^4.3.4"
     mri "^1.2.0"
-    node-fetch "^2.6.7"
+    node-fetch "^2.6.8"
     p-timeout "^4.1.0"
     safe-compare "^1.1.4"
     sandwich-stream "^2.0.2"
-    typegram "^4.1.0"
+    typegram "^4.3.0"
 
 temp-dir@^2.0.0:
   version "2.0.0"
@@ -11900,10 +11900,10 @@ typeforce@^1.11.3, typeforce@^1.18.0:
   resolved "https://registry.yarnpkg.com/typeforce/-/typeforce-1.18.0.tgz#d7416a2c5845e085034d70fcc5b6cc4a90edbfdc"
   integrity sha512-7uc1O8h1M1g0rArakJdf0uLRSSgFcYexrVoKo+bzJd32gd4gDy2L/Z+8/FjPnU9ydY3pEnVPtr9FyscYY60K1g==
 
-typegram@^4.1.0:
-  version "4.1.1"
-  resolved "https://registry.yarnpkg.com/typegram/-/typegram-4.1.1.tgz#afda728d793d97b8c202290eb617640ddd89d005"
-  integrity sha512-4xR41CHqE2gKmbv1t1C4JM0MNtaQWo28Ez4c2dDAwdKL7BixDRxk0THmiWjJTGKAZdkaaD1I3tVMXRlbk9VJOw==
+typegram@^4.3.0:
+  version "4.3.0"
+  resolved "https://registry.yarnpkg.com/typegram/-/typegram-4.3.0.tgz#690ec1287f771608070e149c92de4fca42e54db0"
+  integrity sha512-pS4STyOZoJ++Mwa9GPMTNjOwEzMkxFfFt1By6IbMOJfheP0utMP/H1ga6J9R4DTjAYBr0UDn4eQg++LpWBvcAg==
 
 typescript@^4.9.4:
   version "4.9.4"

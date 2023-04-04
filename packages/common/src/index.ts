@@ -133,6 +133,8 @@ export enum BotCommandName {
   Start = 'start',
   Help = 'help',
   WhoAmI = 'whoami',
+  Watch = 'watch',
+  Unwatch = 'unwatch',
   WatchReboot = 'watchreboot',
   UnwatchReboot = 'unwatchreboot',
   Quit = 'quit',
@@ -177,6 +179,16 @@ export const telegramCommands: BotCommand[] = [
   {
     name: BotCommandName.WhoAmI,
     description: 'Replies with your username and ids.',
+    alwaysPermitted: true,
+  },
+  {
+    name: BotCommandName.Watch,
+    description: 'Start getting notifications for events.',
+    alwaysPermitted: true,
+  },
+  {
+    name: BotCommandName.Unwatch,
+    description: 'Stop getting notifications for events.',
     alwaysPermitted: true,
   },
   {

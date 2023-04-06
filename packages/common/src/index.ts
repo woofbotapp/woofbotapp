@@ -135,25 +135,7 @@ export enum BotCommandName {
   WhoAmI = 'whoami',
   Watch = 'watch',
   Unwatch = 'unwatch',
-  WatchReboot = 'watchreboot',
-  UnwatchReboot = 'unwatchreboot',
   Quit = 'quit',
-  WatchTransaction = 'watchtransaction',
-  UnwatchTransactions = 'unwatchtransactions',
-  WatchAddresses = 'watchaddresses',
-  UnwatchAddresses = 'unwatchaddresses',
-  WatchPriceChange = 'watchpricechange',
-  UnwatchPriceChange = 'unwatchpricechange',
-  WatchNewBlocks = 'watchnewblocks',
-  UnwatchNewBlocks = 'unwatchnewblocks',
-  WatchMempoolClear = 'watchmempoolclear',
-  UnwatchMempoolClear = 'unwatchmempoolclear',
-  WatchLightningChannelsOpened = 'watchlightningchannelsopened',
-  UnwatchLightningChannelsOpened = 'unwatchlightningchannelsopened',
-  WatchLightningChannelsClosed = 'watchlightningchannelsclosed',
-  UnwatchLightningChannelsClosed = 'unwatchlightningchannelsclosed',
-  WatchLightningForwards = 'watchlightningforwards',
-  UnwatchLightningForwards = 'unwatchlightningforwards',
   ListWatches = 'listwatches',
   Links = 'links',
 }
@@ -185,110 +167,6 @@ export const telegramCommands: BotCommand[] = [
   {
     name: BotCommandName.Unwatch,
     description: 'Stop getting notifications for events.',
-  },
-  {
-    name: BotCommandName.WatchReboot,
-    description: 'Get notifications when server reboots.',
-    permissionKey: PermissionKey.WatchReboot,
-  },
-  {
-    name: BotCommandName.UnwatchReboot,
-    description: 'Stop getting notification when server reboots.',
-  },
-  {
-    name: BotCommandName.WatchNewBlocks,
-    description: 'Get notifications new blocks are mined.',
-    permissionKey: PermissionKey.WatchNewBlocks,
-  },
-  {
-    name: BotCommandName.UnwatchNewBlocks,
-    description: 'Stop getting notification when new blocks are mined.',
-  },
-  {
-    name: BotCommandName.WatchTransaction,
-    description: [
-      'Get notifications when a transaction is found in the mempool, confirmed,',
-      'or is being double-spent.',
-    ].join(' '),
-    permissionKey: PermissionKey.WatchTransaction,
-    parametersRequestMessage: watchByName.get(
-      WatchName.Transaction,
-    )?.watchParametersRequestMessage,
-  },
-  {
-    name: BotCommandName.UnwatchTransactions,
-    description: 'Stop getting notifications about one or more transactions.',
-    parametersRequestMessage: watchByName.get(
-      WatchName.Transaction,
-    )?.unwatchParametersRequestMessage,
-  },
-  {
-    name: BotCommandName.WatchAddresses,
-    description: [
-      'Get notification when a transaction spending to the given addresses is added to the',
-      'mempool or confirmed. Get notification when a transaction spending from the given',
-      'addresses is confirmed (but not when it is only added to the mempool).',
-    ].join(' '),
-    permissionKey: PermissionKey.WatchAddresses,
-    parametersRequestMessage: watchByName.get(WatchName.Addresses)?.watchParametersRequestMessage,
-  },
-  {
-    name: BotCommandName.UnwatchAddresses,
-    description: 'Stop getting notifications about one or more addresses.',
-    parametersRequestMessage: watchByName.get(
-      WatchName.Addresses,
-    )?.unwatchParametersRequestMessage,
-  },
-  {
-    name: BotCommandName.WatchPriceChange,
-    description: 'Watch changes in the price of Bitcoin (in USD).',
-    permissionKey: PermissionKey.WatchPriceChange,
-    parametersRequestMessage: watchByName.get(
-      WatchName.PriceChange,
-    )?.watchParametersRequestMessage,
-  },
-  {
-    name: BotCommandName.UnwatchPriceChange,
-    description: 'Stop getting notifications about changes in the price of Bitcoin.',
-  },
-  {
-    name: BotCommandName.WatchMempoolClear,
-    description: [
-      'Get notification when all the transactions in the mempool could fit in the next block and',
-      'there is room for more, and when the mempool becomes full again.',
-    ].join(' '),
-    permissionKey: PermissionKey.WatchMempoolClear,
-  },
-  {
-    name: BotCommandName.UnwatchMempoolClear,
-    description: `Stop getting notifications of /${BotCommandName.WatchMempoolClear}.`,
-  },
-  {
-    name: BotCommandName.WatchLightningChannelsOpened,
-    description: 'Get notification when a lightning channel is opened.',
-    permissionKey: PermissionKey.WatchLightningChannelsOpened,
-  },
-  {
-    name: BotCommandName.UnwatchLightningChannelsOpened,
-    description: `Stop getting notifications of /${BotCommandName.WatchLightningChannelsOpened}.`,
-  },
-  {
-    name: BotCommandName.WatchLightningChannelsClosed,
-    description: 'Get notification when a lightning channel is closed.',
-    permissionKey: PermissionKey.WatchLightningChannelsClosed,
-  },
-  {
-    name: BotCommandName.UnwatchLightningChannelsClosed,
-    description: `Stop getting notifications of /${BotCommandName.WatchLightningChannelsClosed}.`,
-  },
-  {
-    name: BotCommandName.WatchLightningForwards,
-    description: 'Get notification when a lightning payment is forwarded through your node.',
-    permissionKey: PermissionKey.WatchLightningForwards,
-  },
-  {
-    name: BotCommandName.UnwatchLightningForwards,
-    description: `Stop getting notifications of /${BotCommandName.WatchLightningForwards}.`,
   },
   {
     name: BotCommandName.Links,

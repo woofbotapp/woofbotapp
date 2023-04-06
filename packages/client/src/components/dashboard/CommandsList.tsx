@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import Button from '@mui/material/Button';
 import Box from '@mui/material/Box';
 import List from '@mui/material/List';
-import { BotCommandName, telegramCommands } from '@woofbot/common';
+import { PermissionKey, telegramCommands } from '@woofbot/common';
 
 import {
   useGetSettingsCommandsPermissionGroups, useMutationCommandsPermissionGroups,
@@ -17,20 +17,20 @@ export default function CommandsList() {
     isLoading: isDataLoading,
   } = useGetSettingsCommandsPermissionGroups();
   const [permissionGroups, setPermissionGroups] = useState<
-    Partial<Record<BotCommandName, string[]>> | undefined
+    Partial<Record<PermissionKey, string[]>> | undefined
   >(undefined);
   const {
     isLoading: isMutationLoading,
     mutate: mutateCommandsPermissionGroups,
   } = useMutationCommandsPermissionGroups();
-  const onChangePermissionGroups = (command: BotCommandName, value?: string[]) => {
+  const onChangePermissionGroups = (permissionKey: PermissionKey, value?: string[]) => {
     const newPermissionGroups = {
       ...(permissionGroups ?? originalPermissionGroups),
     };
     if (value) {
-      newPermissionGroups[command] = value;
+      newPermissionGroups[permissionKey] = value;
     } else {
-      delete newPermissionGroups[command];
+      delete newPermissionGroups[permissionKey];
     }
     setPermissionGroups(newPermissionGroups);
   };
@@ -38,10 +38,10 @@ export default function CommandsList() {
     if (!originalPermissionGroups || !permissionGroups) {
       return;
     }
-    if (telegramCommands.some(
-      ({ name }) => {
-        const commandPermissionGroups = originalPermissionGroups[name];
-        const commandPatchedPermissionGroups = permissionGroups[name];
+    if (Object.values(PermissionKey).some(
+      (permissionKey) => {
+        const commandPermissionGroups = originalPermissionGroups[permissionKey];
+        const commandPatchedPermissionGroups = permissionGroups[permissionKey];
         return (
           Boolean(commandPermissionGroups) !== Boolean(commandPatchedPermissionGroups)
           || (
@@ -102,15 +102,14 @@ export default function CommandsList() {
       </Box>
       <List dense sx={{ py: 0 }}>
         {
-          telegramCommands.map(({ name, description, alwaysPermitted }) => (
+          telegramCommands.map(({ name, description, permissionKey }) => (
             <Command
               key={name}
               command={name}
+              permissionKey={permissionKey}
               description={description}
               permissionGroups={(permissionGroups ?? originalPermissionGroups)?.[name]}
-              onChange={
-                alwaysPermitted ? undefined : onChangePermissionGroups
-              }
+              onChange={onChangePermissionGroups}
               disabled={isLoading}
               originalPermissionGroups={originalPermissionGroups?.[name]}
             />

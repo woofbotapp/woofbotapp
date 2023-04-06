@@ -1,7 +1,7 @@
 import * as React from 'react';
 import ListItem from '@mui/material/ListItem';
 import Typography from '@mui/material/Typography';
-import { BotCommandName, permissionGroupNameRegex } from '@woofbot/common';
+import { BotCommandName, PermissionKey, permissionGroupNameRegex } from '@woofbot/common';
 import { MuiChipsInput } from 'mui-chips-input';
 import RadioGroup from '@mui/material/RadioGroup';
 import FormControlLabel from '@mui/material/FormControlLabel';
@@ -17,12 +17,14 @@ export interface CommandProps {
   description: string;
   originalPermissionGroups?: string[];
   permissionGroups?: string[];
-  onChange?: (commandName: BotCommandName, value?: string[]) => void;
+  permissionKey?: PermissionKey;
+  onChange: (permissionKey: PermissionKey, value?: string[]) => void;
   disabled?: boolean;
 }
 
 export default function Command({
   command, description, originalPermissionGroups, permissionGroups, onChange, disabled,
+  permissionKey,
 }: CommandProps) {
   return (
     <ListItem
@@ -45,7 +47,7 @@ export default function Command({
         {description}
       </Typography>
       {
-        onChange && (
+        permissionKey && (
           <Typography component="p" sx={{ pl: 2 }}>
             <RadioGroup
               value={
@@ -54,10 +56,10 @@ export default function Command({
               onChange={(_event, value) => {
                 switch (value) {
                   case PermissionState.Anyone:
-                    onChange(command, undefined);
+                    onChange(permissionKey, undefined);
                     break;
                   case PermissionState.ListedPermissionGroups:
-                    onChange(command, originalPermissionGroups ?? []);
+                    onChange(permissionKey, originalPermissionGroups ?? []);
                     break;
                   default:
                     break;
@@ -88,7 +90,7 @@ export default function Command({
               size="small"
               clearInputOnBlur
               value={permissionGroups ?? []}
-              onChange={(value) => onChange(command, value)}
+              onChange={(value) => onChange(permissionKey, value)}
               addOnWhichKey={[' ', 'Enter']}
               validate={(value) => {
                 if (!permissionGroupNameRegex.test(value)) {

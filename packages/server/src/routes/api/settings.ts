@@ -1,4 +1,4 @@
-import { permissionGroupNameRegex, telegramCommands } from '@woofbot/common';
+import { PermissionKey, permissionGroupNameRegex } from '@woofbot/common';
 import Router from 'express';
 
 import { asyncHandler } from '../../helpers/express';
@@ -190,9 +190,7 @@ apiSettingsRouter.get('/commands-permission-groups', asyncHandler(async (req, re
   res.json(settings.commandsPermissionGroups);
 }));
 
-const permissionGroupsCommands = new Set<string>(
-  telegramCommands.filter(({ alwaysPermitted }) => !alwaysPermitted).map(({ name }) => name),
-);
+const permissionKeys = new Set<string>(Object.values(PermissionKey));
 
 apiSettingsRouter.post('/commands-permission-groups', asyncHandler(async (req, res) => {
   // No patches - just replace all.
@@ -200,7 +198,7 @@ apiSettingsRouter.post('/commands-permission-groups', asyncHandler(async (req, r
   if (
     !body || typeof body !== 'object' || Array.isArray(body)
     || Object.entries(body).some(([key, value]) => (
-      !permissionGroupsCommands.has(key)
+      !permissionKeys.has(key)
       || !Array.isArray(value)
       || value.length > 100
       || value.some((groupName) => (

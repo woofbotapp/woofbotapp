@@ -1204,6 +1204,68 @@ export class TelegrafManager {
     return undefined;
   }
 
+  static async [BotCommandName.Unwatch](
+    ctx: TextContext,
+    user: UserDocument,
+    args: string[],
+  ): Promise<void | undefined> {
+    if (args.length === 0) {
+      ctx.replyWithMarkdownV2(
+        escapeMarkdown('Which watches would you like to cancel?'),
+        {
+          reply_markup: {
+            keyboard: watches.map(
+              (watch) => [{ text: `/unwatch ${watch.name}` }],
+            ),
+          },
+        },
+      );
+      return undefined;
+    }
+    const [watchName, ...leftArgs] = args;
+    const watch = watchByName.get(watchName as WatchName);
+    if (!watch) {
+      ctx.replyWithMarkdownV2(
+        escapeMarkdown('Unrecognized event-name to unwatch'),
+      );
+      return undefined;
+    }
+    if (leftArgs.length === 0 && watch?.unwatchParametersRequestMessage) {
+      await ctx.replyWithMarkdownV2(
+        escapeMarkdown(watch?.unwatchParametersRequestMessage),
+        {
+          reply_markup: {
+            force_reply: true,
+          },
+        },
+      );
+      return undefined;
+    }
+    switch (watch.name) {
+      case WatchName.Reboot:
+        return TelegrafManager.unwatchreboot(ctx, user);
+      case WatchName.Transaction:
+        return TelegrafManager.unwatchtransactions(ctx, user, leftArgs);
+      case WatchName.Addresses:
+        return TelegrafManager.unwatchaddresses(ctx, user, leftArgs);
+      case WatchName.PriceChange:
+        return TelegrafManager.unwatchpricechange(ctx, user);
+      case WatchName.NewBlocks:
+        return TelegrafManager.unwatchnewblocks(ctx, user);
+      case WatchName.MempoolClear:
+        return TelegrafManager.unwatchmempoolclear(ctx, user);
+      case WatchName.LightningChannelsOpened:
+        return TelegrafManager.unwatchlightningchannelsopened(ctx, user);
+      case WatchName.LightningChannelsClosed:
+        return TelegrafManager.unwatchlightningchannelsclosed(ctx, user);
+      case WatchName.LightningForwards:
+        return TelegrafManager.unwatchlightningforwards(ctx, user);
+      default:
+        break;
+    }
+    return undefined;
+  }
+
   static async watchreboot(ctx: TextContext, user: UserDocument) {
     const found = await UsersModel.findByIdAndUpdate(
       user._id,

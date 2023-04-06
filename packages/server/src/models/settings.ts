@@ -1,9 +1,9 @@
-import { BotCommandName, telegramCommands } from '@woofbot/common';
+import { PermissionKey } from '@woofbot/common';
 import { Schema, model } from 'mongoose';
 
 import { TimeFields } from '../helpers/mongo';
 
-type CommandsPermissionGroupsMap = Partial<Record<BotCommandName, string[]>>;
+type CommandsPermissionGroupsMap = Partial<Record<PermissionKey, string[]>>;
 
 export interface LndChannelInformation {
   channelId: string; // "id" may conflict with mongodb stuff
@@ -27,8 +27,8 @@ interface SettingsFields {
 
 const commandsPermissionGroupsSchema = new Schema<CommandsPermissionGroupsMap>(
   Object.fromEntries(
-    telegramCommands.filter(({ alwaysPermitted }) => !alwaysPermitted).map(
-      ({ name }) => [
+    Object.values(PermissionKey).map(
+      (name) => [
         name,
         { type: [String], required: false, default: undefined },
       ],
@@ -69,9 +69,9 @@ export const defaultSettings: Omit<SettingsFields, 'migrationVersion'> = {
   mempoolUrlPrefix: 'https://mempool.space',
   commandsPermissionGroups: {
     // Commands that by default not allowed to anyone
-    [BotCommandName.WatchLightningChannelsOpened]: [],
-    [BotCommandName.WatchLightningChannelsClosed]: [],
-    [BotCommandName.WatchLightningForwards]: [],
+    [PermissionKey.WatchLightningChannelsOpened]: [],
+    [PermissionKey.WatchLightningChannelsClosed]: [],
+    [PermissionKey.WatchLightningForwards]: [],
   },
 };
 

@@ -12,6 +12,123 @@ export enum TelegramStatus {
   Running = 'running',
 }
 
+export enum WatchName {
+  Reboot = 'reboot',
+  Transaction = 'transaction',
+  Addresses = 'addresses',
+  PriceChange = 'price-change',
+  NewBlocks = 'new-blocks',
+  MempoolClear = 'mempool-clear',
+  LightningChannelsOpened = 'lightning-channels-opened',
+  LightningChannelsClosed = 'lightning-channels-closed',
+  LightningForwards = 'lightning-forwards',
+}
+
+export enum PermissionKey {
+  WatchReboot = 'watchreboot',
+  WatchNewBlocks = 'watchnewblocks',
+  WatchTransaction = 'watchtransaction',
+  WatchAddresses = 'watchaddresses',
+  WatchPriceChange = 'watchpricechange',
+  WatchMempoolClear = 'watchmempoolclear',
+  WatchLightningChannelsOpened = 'watchlightningchannelsopened',
+  WatchLightningChannelsClosed = 'watchlightningchannelsclosed',
+  WatchLightningForwards = 'watchlightningforwards',
+}
+
+export interface Watch {
+  name: WatchName;
+  description: string;
+  watchParametersRequestMessage?: string;
+  unwatchParametersRequestMessage?: string;
+  permissionKey?: PermissionKey;
+}
+
+export const watches: Watch[] = [
+  {
+    name: WatchName.Reboot,
+    description: 'Get notifications when server reboots.',
+    permissionKey: PermissionKey.WatchReboot,
+  },
+  {
+    name: WatchName.Transaction,
+    description: [
+      'Get notifications when a transaction is found in the mempool, confirmed,',
+      'or is being double-spent.',
+    ].join(' '),
+    watchParametersRequestMessage: [
+      'Which transaction-id do you want to watch? You can specify only the id like:',
+      '"a1075db55d416d3ca199f55b6084e2115b9345e16c5cf302fc80e9d5fbf5d48d",',
+      'or you can add a nickname like:',
+      '"pizza_order:a1075db55d416d3ca199f55b6084e2115b9345e16c5cf302fc80e9d5fbf5d48d".',
+      'The nickname should not contain spaces.',
+    ].join(' '),
+    unwatchParametersRequestMessage: [
+      'Which transaction-ids or nicknames of the transactions do you no longer want',
+      'to watch? You can specify multiple values with spaces between them.',
+      'You can also specify only the prefix, with a "*" at the end, like: "a1075db55d416d3c*".',
+    ].join(' '),
+    permissionKey: PermissionKey.WatchTransaction,
+  },
+  {
+    name: WatchName.Addresses,
+    description: [
+      'Get notification when a transaction spending to the given addresses is added to the',
+      'mempool or confirmed. Get notification when a transaction spending from the given',
+      'addresses is confirmed (but not when it is only added to the mempool).',
+    ].join(' '),
+    watchParametersRequestMessage: [
+      'Which addresses do you want to watch? You can specify only the address, like:',
+      '"17SkEw2md5avVNyYgj6RiXuQKNwkXaxFyQ", or you can add a nickname like:',
+      '"pizza_guy:17SkEw2md5avVNyYgj6RiXuQKNwkXaxFyQ".',
+      'You can specify multiple values with spaces between them.',
+      'The nicknames should not contain spaces.',
+    ].join(' '),
+    unwatchParametersRequestMessage: [
+      'Which addresses or nicknames of addresses do you no longer want to watch?',
+      'You can specify multiple values with spaces between them.',
+      'You can also specify only the prefix, with a "*" at the end, like: "17SkEw2m*".',
+    ].join(' '),
+    permissionKey: PermissionKey.WatchAddresses,
+  },
+  {
+    name: WatchName.PriceChange,
+    description: 'Watch changes in the price of Bitcoin (in USD).',
+    watchParametersRequestMessage: 'What price change (in USD) do you want to watch?',
+    permissionKey: PermissionKey.WatchPriceChange,
+  },
+  {
+    name: WatchName.NewBlocks,
+    description: 'Get notifications when new blocks are mined.',
+    permissionKey: PermissionKey.WatchNewBlocks,
+  },
+  {
+    name: WatchName.MempoolClear,
+    description: [
+      'Get notifications when all the transactions in the mempool could fit in the next block',
+      'and there is room for more, and when the mempool becomes full again.',
+    ].join(' '),
+    permissionKey: PermissionKey.WatchMempoolClear,
+  },
+  {
+    name: WatchName.LightningChannelsOpened,
+    description: 'Get notifications when lightning channels are opened.',
+    permissionKey: PermissionKey.WatchLightningChannelsOpened,
+  },
+  {
+    name: WatchName.LightningChannelsClosed,
+    description: 'Get notifications when lightning channel are closed.',
+    permissionKey: PermissionKey.WatchLightningChannelsClosed,
+  },
+  {
+    name: WatchName.LightningForwards,
+    description: 'Get notifications when lightning payments are forwarded through your node.',
+    permissionKey: PermissionKey.WatchLightningForwards,
+  },
+];
+
+export const watchByName = new Map(watches.map((watch) => [watch.name, watch]));
+
 export enum BotCommandName {
   Start = 'start',
   Help = 'help',
@@ -89,23 +206,17 @@ export const telegramCommands: BotCommand[] = [
       'or is being double-spent.',
     ].join(' '),
     alwaysPermitted: false,
-    parametersRequestMessage: [
-      'Which transaction-id do you want to watch? You can specify only the id like:',
-      '"a1075db55d416d3ca199f55b6084e2115b9345e16c5cf302fc80e9d5fbf5d48d",',
-      'or you can add a nickname like:',
-      '"pizza_order:a1075db55d416d3ca199f55b6084e2115b9345e16c5cf302fc80e9d5fbf5d48d".',
-      'The nickname should not contain spaces.',
-    ].join(' '),
+    parametersRequestMessage: watchByName.get(
+      WatchName.Transaction,
+    )?.watchParametersRequestMessage,
   },
   {
     name: BotCommandName.UnwatchTransactions,
     description: 'Stop getting notifications about one or more transactions.',
     alwaysPermitted: true,
-    parametersRequestMessage: [
-      'Which transaction-ids or nicknames of the transactions do you no longer want',
-      'to watch? You can specify multiple values with spaces between them.',
-      'You can also specify only the prefix, with a "*" at the end, like: "a1075db55d416d3c*".',
-    ].join(' '),
+    parametersRequestMessage: watchByName.get(
+      WatchName.Transaction,
+    )?.unwatchParametersRequestMessage,
   },
   {
     name: BotCommandName.WatchAddresses,
@@ -115,29 +226,23 @@ export const telegramCommands: BotCommand[] = [
       'addresses is confirmed (but not when it is only added to the mempool).',
     ].join(' '),
     alwaysPermitted: false,
-    parametersRequestMessage: [
-      'Which addresses do you want to watch? You can specify only the address, like:',
-      '"17SkEw2md5avVNyYgj6RiXuQKNwkXaxFyQ", or you can add a nickname like:',
-      '"pizza_guy:17SkEw2md5avVNyYgj6RiXuQKNwkXaxFyQ".',
-      'You can specify multiple values with spaces between them.',
-      'The nicknames should not contain spaces.',
-    ].join(' '),
+    parametersRequestMessage: watchByName.get(WatchName.Addresses)?.watchParametersRequestMessage,
   },
   {
     name: BotCommandName.UnwatchAddresses,
     description: 'Stop getting notifications about one or more addresses.',
     alwaysPermitted: true,
-    parametersRequestMessage: [
-      'Which addresses or nicknames of addresses do you no longer want to watch?',
-      'You can specify multiple values with spaces between them.',
-      'You can also specify only the prefix, with a "*" at the end, like: "17SkEw2m*".',
-    ].join(' '),
+    parametersRequestMessage: watchByName.get(
+      WatchName.Addresses,
+    )?.unwatchParametersRequestMessage,
   },
   {
     name: BotCommandName.WatchPriceChange,
     description: 'Watch changes in the price of Bitcoin (in USD).',
     alwaysPermitted: false,
-    parametersRequestMessage: 'What price change (in USD) do you want to watch?',
+    parametersRequestMessage: watchByName.get(
+      WatchName.PriceChange,
+    )?.watchParametersRequestMessage,
   },
   {
     name: BotCommandName.UnwatchPriceChange,

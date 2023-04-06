@@ -1174,7 +1174,11 @@ export class TelegrafManager {
       );
       return undefined;
     }
-    // TODO: verify permission
+    const { permissionKey } = watch;
+    if (permissionKey && !await TelegrafManager.isPermitted(user, permissionKey)) {
+      ctx.replyWithMarkdownV2(notPermittedMessage);
+      return undefined;
+    }
     switch (watch.name) {
       case WatchName.Reboot:
         return TelegrafManager.watchreboot(ctx, user);

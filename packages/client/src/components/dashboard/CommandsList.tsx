@@ -105,13 +105,17 @@ export default function CommandsList() {
           telegramCommands.map(({ name, description, permissionKey }) => (
             <Command
               key={name}
-              command={name}
+              command={`/${name}`}
               permissionKey={permissionKey}
               description={description}
-              permissionGroups={(permissionGroups ?? originalPermissionGroups)?.[name]}
+              permissionGroups={
+                permissionKey && (permissionGroups ?? originalPermissionGroups)?.[permissionKey]
+              }
               onChange={onChangePermissionGroups}
               disabled={isLoading}
-              originalPermissionGroups={originalPermissionGroups?.[name]}
+              originalPermissionGroups={
+                permissionKey && originalPermissionGroups?.[permissionKey]
+              }
             />
           ))
         }

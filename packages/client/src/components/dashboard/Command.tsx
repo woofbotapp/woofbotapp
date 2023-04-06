@@ -1,7 +1,7 @@
 import * as React from 'react';
 import ListItem from '@mui/material/ListItem';
 import Typography from '@mui/material/Typography';
-import { BotCommandName, PermissionKey, permissionGroupNameRegex } from '@woofbot/common';
+import { PermissionKey, permissionGroupNameRegex } from '@woofbot/common';
 import { MuiChipsInput } from 'mui-chips-input';
 import RadioGroup from '@mui/material/RadioGroup';
 import FormControlLabel from '@mui/material/FormControlLabel';
@@ -13,7 +13,7 @@ enum PermissionState {
 }
 
 export interface CommandProps {
-  command: BotCommandName;
+  command: string;
   description: string;
   originalPermissionGroups?: string[];
   permissionGroups?: string[];
@@ -40,7 +40,7 @@ export default function Command({
           fontFamily: 'Consolas, Monaco, \'Courier New\', monospace',
         }}
       >
-        /{command}
+        {command}
         </Typography>
       <Typography component="span">
         {' - '}

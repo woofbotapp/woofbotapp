@@ -1,6 +1,6 @@
 import {
-  TelegramStatus, telegramCommands, BotCommand, BotCommandName, mSatsToSats, prettyDate,
-  WatchName, watches, watchByName,
+  TelegramStatus, telegramCommands, BotCommandName, mSatsToSats, prettyDate, WatchName, watches,
+  watchByName, PermissionKey,
 } from '@woofbot/common';
 import { Context, Telegraf, TelegramError } from 'telegraf';
 import { validate } from 'bitcoin-address-validation';
@@ -853,15 +853,12 @@ export class TelegrafManager {
     }
   }
 
-  static async isPermitted(user: UserFields, command: BotCommand): Promise<boolean> {
-    if (!command.permissionKey) {
-      return true;
-    }
+  static async isPermitted(user: UserFields, permissionKey: PermissionKey): Promise<boolean> {
     const settings = await SettingsModel.findById(zeroObjectId);
     if (!settings) {
       throw new Error('Settings not found to check permission groups');
     }
-    const commandPermissionGroups = settings?.commandsPermissionGroups[command.permissionKey];
+    const commandPermissionGroups = settings?.commandsPermissionGroups[permissionKey];
     if (!commandPermissionGroups) {
       return true;
     }
@@ -999,7 +996,8 @@ export class TelegrafManager {
                 user.telegramUsername = ctx.from.username;
               }
             }
-            if (!await TelegrafManager.isPermitted(user, command)) {
+            const { permissionKey } = command;
+            if (permissionKey && !await TelegrafManager.isPermitted(user, permissionKey)) {
               ctx.replyWithMarkdownV2(notPermittedMessage);
               return;
             }
@@ -1073,7 +1071,8 @@ export class TelegrafManager {
                 await ctx.replyWithMarkdownV2(notFoundMessage);
                 return;
               }
-              if (!await TelegrafManager.isPermitted(user, telegramCommand)) {
+              const { permissionKey } = telegramCommand;
+              if (permissionKey && !await TelegrafManager.isPermitted(user, permissionKey)) {
                 ctx.replyWithMarkdownV2(notPermittedMessage);
                 return;
               }

@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import Button from '@mui/material/Button';
 import Box from '@mui/material/Box';
 import List from '@mui/material/List';
-import { PermissionKey, telegramCommands } from '@woofbot/common';
+import Typography from '@mui/material/Typography';
+import { PermissionKey, telegramCommands, watches } from '@woofbot/common';
 
 import {
   useGetSettingsCommandsPermissionGroups, useMutationCommandsPermissionGroups,
@@ -106,6 +107,29 @@ export default function CommandsList() {
             <Command
               key={name}
               command={`/${name}`}
+              permissionKey={permissionKey}
+              description={description}
+              permissionGroups={
+                permissionKey && (permissionGroups ?? originalPermissionGroups)?.[permissionKey]
+              }
+              onChange={onChangePermissionGroups}
+              disabled={isLoading}
+              originalPermissionGroups={
+                permissionKey && originalPermissionGroups?.[permissionKey]
+              }
+            />
+          ))
+        }
+      </List>
+      <Typography component="p" sx={{ mt: 1 }}>
+        Here are the events that you can watch:
+      </Typography>
+      <List dense sx={{ py: 0 }}>
+        {
+          watches.map(({ name, description, permissionKey }) => (
+            <Command
+              key={name}
+              command={`/watch ${name}`}
               permissionKey={permissionKey}
               description={description}
               permissionGroups={

@@ -1181,23 +1181,23 @@ export class TelegrafManager {
     }
     switch (watch.name) {
       case WatchName.Reboot:
-        return TelegrafManager.watchreboot(ctx, user);
+        return TelegrafManager.watchReboot(ctx, user);
       case WatchName.Transaction:
-        return this.watchtransaction(ctx, user, leftArgs);
+        return this.watchTransaction(ctx, user, leftArgs);
       case WatchName.Addresses:
-        return TelegrafManager.watchaddresses(ctx, user, leftArgs);
+        return TelegrafManager.watchAddresses(ctx, user, leftArgs);
       case WatchName.PriceChange:
-        return TelegrafManager.watchpricechange(ctx, user, leftArgs);
+        return TelegrafManager.watchPriceChange(ctx, user, leftArgs);
       case WatchName.NewBlocks:
-        return TelegrafManager.watchnewblocks(ctx, user);
+        return TelegrafManager.watchNewBlocks(ctx, user);
       case WatchName.MempoolClear:
-        return TelegrafManager.watchmempoolclear(ctx, user);
+        return TelegrafManager.watchMempoolClear(ctx, user);
       case WatchName.LightningChannelsOpened:
-        return TelegrafManager.watchlightningchannelsopened(ctx, user);
+        return TelegrafManager.watchLightningChannelsOpened(ctx, user);
       case WatchName.LightningChannelsClosed:
-        return TelegrafManager.watchlightningchannelsclosed(ctx, user);
+        return TelegrafManager.watchLightningChannelsClosed(ctx, user);
       case WatchName.LightningForwards:
-        return TelegrafManager.watchlightningforwards(ctx, user);
+        return TelegrafManager.watchLightningForwards(ctx, user);
       default:
         break;
     }
@@ -1243,30 +1243,30 @@ export class TelegrafManager {
     }
     switch (watch.name) {
       case WatchName.Reboot:
-        return TelegrafManager.unwatchreboot(ctx, user);
+        return TelegrafManager.unwatchReboot(ctx, user);
       case WatchName.Transaction:
-        return TelegrafManager.unwatchtransactions(ctx, user, leftArgs);
+        return TelegrafManager.unwatchTransactions(ctx, user, leftArgs);
       case WatchName.Addresses:
-        return TelegrafManager.unwatchaddresses(ctx, user, leftArgs);
+        return TelegrafManager.unwatchAddresses(ctx, user, leftArgs);
       case WatchName.PriceChange:
-        return TelegrafManager.unwatchpricechange(ctx, user);
+        return TelegrafManager.unwatchPriceChange(ctx, user);
       case WatchName.NewBlocks:
-        return TelegrafManager.unwatchnewblocks(ctx, user);
+        return TelegrafManager.unwatchNewBlocks(ctx, user);
       case WatchName.MempoolClear:
-        return TelegrafManager.unwatchmempoolclear(ctx, user);
+        return TelegrafManager.unwatchMempoolClear(ctx, user);
       case WatchName.LightningChannelsOpened:
-        return TelegrafManager.unwatchlightningchannelsopened(ctx, user);
+        return TelegrafManager.unwatchLightningChannelsOpened(ctx, user);
       case WatchName.LightningChannelsClosed:
-        return TelegrafManager.unwatchlightningchannelsclosed(ctx, user);
+        return TelegrafManager.unwatchLightningChannelsClosed(ctx, user);
       case WatchName.LightningForwards:
-        return TelegrafManager.unwatchlightningforwards(ctx, user);
+        return TelegrafManager.unwatchLightningForwards(ctx, user);
       default:
         break;
     }
     return undefined;
   }
 
-  static async watchreboot(ctx: TextContext, user: UserDocument) {
+  static async watchReboot(ctx: TextContext, user: UserDocument) {
     const found = await UsersModel.findByIdAndUpdate(
       user._id,
       {
@@ -1282,7 +1282,7 @@ export class TelegrafManager {
     ctx.replyWithMarkdownV2(escapeMarkdown('Started watching reboots.'));
   }
 
-  static async unwatchreboot(ctx: TextContext, user: UserDocument) {
+  static async unwatchReboot(ctx: TextContext, user: UserDocument) {
     const found = await UsersModel.findByIdAndUpdate(
       user._id,
       {
@@ -1298,7 +1298,7 @@ export class TelegrafManager {
     ctx.replyWithMarkdownV2(escapeMarkdown('Stopped watching reboots.'));
   }
 
-  static async watchnewblocks(ctx: TextContext, user: UserDocument) {
+  static async watchNewBlocks(ctx: TextContext, user: UserDocument) {
     const settings = await SettingsModel.findById(zeroObjectId);
     if (!settings) {
       ctx.replyWithMarkdownV2(notFoundMessage);
@@ -1321,7 +1321,7 @@ export class TelegrafManager {
     ));
   }
 
-  static async unwatchnewblocks(ctx: TextContext, user: UserDocument) {
+  static async unwatchNewBlocks(ctx: TextContext, user: UserDocument) {
     const found = await UsersModel.findByIdAndUpdate(
       user._id,
       {
@@ -1337,7 +1337,7 @@ export class TelegrafManager {
     ctx.replyWithMarkdownV2(escapeMarkdown('Stopped watching new blocks.'));
   }
 
-  async watchtransaction(ctx: TextContext, user: UserDocument, args: string[]) {
+  async watchTransaction(ctx: TextContext, user: UserDocument, args: string[]) {
     if (args.length > 1) {
       ctx.replyWithMarkdownV2(escapeMarkdown('Too many parameters'));
       return;
@@ -1498,7 +1498,7 @@ export class TelegrafManager {
     }
   }
 
-  static async unwatchtransactions(
+  static async unwatchTransactions(
     ctx: TextContext,
     user: UserDocument,
     args: string[],
@@ -1545,7 +1545,7 @@ export class TelegrafManager {
     ));
   }
 
-  static async watchaddresses(
+  static async watchAddresses(
     ctx: TextContext,
     user: UserDocument,
     args: string[],
@@ -1631,7 +1631,7 @@ export class TelegrafManager {
     ].join(' ')));
   }
 
-  static async unwatchaddresses(
+  static async unwatchAddresses(
     ctx: TextContext,
     user: UserDocument,
     args: string[],
@@ -1678,7 +1678,7 @@ export class TelegrafManager {
     ));
   }
 
-  static async watchpricechange(
+  static async watchPriceChange(
     ctx: TextContext,
     user: UserDocument,
     args: string[],
@@ -1726,7 +1726,7 @@ export class TelegrafManager {
     }
   }
 
-  static async unwatchpricechange(ctx: TextContext, user: UserDocument) {
+  static async unwatchPriceChange(ctx: TextContext, user: UserDocument) {
     await UsersModel.updateOne(
       {
         _id: user._id,
@@ -1745,7 +1745,7 @@ export class TelegrafManager {
     }
   }
 
-  static async watchmempoolclear(ctx: TextContext, user: UserDocument) {
+  static async watchMempoolClear(ctx: TextContext, user: UserDocument) {
     await UsersModel.updateOne(
       {
         _id: user._id,
@@ -1772,7 +1772,7 @@ export class TelegrafManager {
     ));
   }
 
-  static async unwatchmempoolclear(ctx: TextContext, user: UserDocument) {
+  static async unwatchMempoolClear(ctx: TextContext, user: UserDocument) {
     await UsersModel.updateOne(
       {
         _id: user._id,
@@ -1788,7 +1788,7 @@ export class TelegrafManager {
     ));
   }
 
-  static async watchlightningchannelsopened(ctx: TextContext, user: UserDocument) {
+  static async watchLightningChannelsOpened(ctx: TextContext, user: UserDocument) {
     if (!lndWatcher.isRunning()) {
       ctx.replyWithMarkdownV2(escapeMarkdown(
         'Sorry, the LND integration is not configured.',
@@ -1810,7 +1810,7 @@ export class TelegrafManager {
     ));
   }
 
-  static async unwatchlightningchannelsopened(
+  static async unwatchLightningChannelsOpened(
     ctx: TextContext,
     user: UserDocument,
   ) {
@@ -1835,7 +1835,7 @@ export class TelegrafManager {
     ));
   }
 
-  static async watchlightningchannelsclosed(
+  static async watchLightningChannelsClosed(
     ctx: TextContext,
     user: UserDocument,
   ) {
@@ -1860,7 +1860,7 @@ export class TelegrafManager {
     ));
   }
 
-  static async unwatchlightningchannelsclosed(
+  static async unwatchLightningChannelsClosed(
     ctx: TextContext,
     user: UserDocument,
   ) {
@@ -1885,7 +1885,7 @@ export class TelegrafManager {
     ));
   }
 
-  static async watchlightningforwards(
+  static async watchLightningForwards(
     ctx: TextContext,
     user: UserDocument,
   ) {
@@ -1910,7 +1910,7 @@ export class TelegrafManager {
     ));
   }
 
-  static async unwatchlightningforwards(
+  static async unwatchLightningForwards(
     ctx: TextContext,
     user: UserDocument,
   ) {

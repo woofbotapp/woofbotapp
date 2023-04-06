@@ -1,4 +1,4 @@
-import { BotCommandName, TelegramStatus } from '@woofbot/common';
+import { PermissionKey, TelegramStatus } from '@woofbot/common';
 import { useMutation, useQueryClient } from 'react-query';
 
 import { apiRoutes } from '../routes';
@@ -107,7 +107,7 @@ export const useMutationSettingsGeneral = () => {
   return mutation;
 };
 
-type CommandsPermissionGroupsMap = Partial<Record<BotCommandName, string[]>>;
+type CommandsPermissionGroupsMap = Partial<Record<PermissionKey, string[]>>;
 
 export const useGetSettingsCommandsPermissionGroups = () => useAuthQuery<
   CommandsPermissionGroupsMap

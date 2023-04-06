@@ -1220,7 +1220,7 @@ export class TelegrafManager {
     ctx.replyWithMarkdownV2(escapeMarkdown('Started watching reboots.'));
   }
 
-  static async [BotCommandName.UnwatchReboot](ctx: TextContext, user: UserDocument) {
+  static async unwatchreboot(ctx: TextContext, user: UserDocument) {
     const found = await UsersModel.findByIdAndUpdate(
       user._id,
       {
@@ -1259,7 +1259,7 @@ export class TelegrafManager {
     ));
   }
 
-  static async [BotCommandName.UnwatchNewBlocks](ctx: TextContext, user: UserDocument) {
+  static async unwatchnewblocks(ctx: TextContext, user: UserDocument) {
     const found = await UsersModel.findByIdAndUpdate(
       user._id,
       {
@@ -1436,7 +1436,7 @@ export class TelegrafManager {
     }
   }
 
-  static async [BotCommandName.UnwatchTransactions](
+  static async unwatchtransactions(
     ctx: TextContext,
     user: UserDocument,
     args: string[],
@@ -1569,7 +1569,7 @@ export class TelegrafManager {
     ].join(' ')));
   }
 
-  static async [BotCommandName.UnwatchAddresses](
+  static async unwatchaddresses(
     ctx: TextContext,
     user: UserDocument,
     args: string[],
@@ -1664,7 +1664,7 @@ export class TelegrafManager {
     }
   }
 
-  static async [BotCommandName.UnwatchPriceChange](ctx: TextContext, user: UserDocument) {
+  static async unwatchpricechange(ctx: TextContext, user: UserDocument) {
     await UsersModel.updateOne(
       {
         _id: user._id,
@@ -1710,7 +1710,7 @@ export class TelegrafManager {
     ));
   }
 
-  static async [BotCommandName.UnwatchMempoolClear](ctx: TextContext, user: UserDocument) {
+  static async unwatchmempoolclear(ctx: TextContext, user: UserDocument) {
     await UsersModel.updateOne(
       {
         _id: user._id,
@@ -1748,7 +1748,7 @@ export class TelegrafManager {
     ));
   }
 
-  static async [BotCommandName.UnwatchLightningChannelsOpened](
+  static async unwatchlightningchannelsopened(
     ctx: TextContext,
     user: UserDocument,
   ) {
@@ -1798,7 +1798,7 @@ export class TelegrafManager {
     ));
   }
 
-  static async [BotCommandName.UnwatchLightningChannelsClosed](
+  static async unwatchlightningchannelsclosed(
     ctx: TextContext,
     user: UserDocument,
   ) {
@@ -1848,7 +1848,7 @@ export class TelegrafManager {
     ));
   }
 
-  static async [BotCommandName.UnwatchLightningForwards](
+  static async unwatchlightningforwards(
     ctx: TextContext,
     user: UserDocument,
   ) {

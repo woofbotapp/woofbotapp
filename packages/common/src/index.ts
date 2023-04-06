@@ -161,7 +161,7 @@ export enum BotCommandName {
 export interface BotCommand {
   name: BotCommandName;
   description: string;
-  alwaysPermitted: boolean;
+  permissionKey?: PermissionKey;
   parametersRequestMessage?: string;
 }
 
@@ -169,47 +169,40 @@ export const telegramCommands: BotCommand[] = [
   {
     name: BotCommandName.Start,
     description: 'Registers to the server.',
-    alwaysPermitted: true,
   },
   {
     name: BotCommandName.Help,
     description: 'Shows help about available commands.',
-    alwaysPermitted: true,
   },
   {
     name: BotCommandName.WhoAmI,
     description: 'Replies with your username and ids.',
-    alwaysPermitted: true,
   },
   {
     name: BotCommandName.Watch,
     description: 'Start getting notifications for events.',
-    alwaysPermitted: true,
   },
   {
     name: BotCommandName.Unwatch,
     description: 'Stop getting notifications for events.',
-    alwaysPermitted: true,
   },
   {
     name: BotCommandName.WatchReboot,
     description: 'Get notifications when server reboots.',
-    alwaysPermitted: false,
+    permissionKey: PermissionKey.WatchReboot,
   },
   {
     name: BotCommandName.UnwatchReboot,
     description: 'Stop getting notification when server reboots.',
-    alwaysPermitted: true,
   },
   {
     name: BotCommandName.WatchNewBlocks,
     description: 'Get notifications new blocks are mined.',
-    alwaysPermitted: false,
+    permissionKey: PermissionKey.WatchNewBlocks,
   },
   {
     name: BotCommandName.UnwatchNewBlocks,
     description: 'Stop getting notification when new blocks are mined.',
-    alwaysPermitted: true,
   },
   {
     name: BotCommandName.WatchTransaction,
@@ -217,7 +210,7 @@ export const telegramCommands: BotCommand[] = [
       'Get notifications when a transaction is found in the mempool, confirmed,',
       'or is being double-spent.',
     ].join(' '),
-    alwaysPermitted: false,
+    permissionKey: PermissionKey.WatchTransaction,
     parametersRequestMessage: watchByName.get(
       WatchName.Transaction,
     )?.watchParametersRequestMessage,
@@ -225,7 +218,6 @@ export const telegramCommands: BotCommand[] = [
   {
     name: BotCommandName.UnwatchTransactions,
     description: 'Stop getting notifications about one or more transactions.',
-    alwaysPermitted: true,
     parametersRequestMessage: watchByName.get(
       WatchName.Transaction,
     )?.unwatchParametersRequestMessage,
@@ -237,13 +229,12 @@ export const telegramCommands: BotCommand[] = [
       'mempool or confirmed. Get notification when a transaction spending from the given',
       'addresses is confirmed (but not when it is only added to the mempool).',
     ].join(' '),
-    alwaysPermitted: false,
+    permissionKey: PermissionKey.WatchAddresses,
     parametersRequestMessage: watchByName.get(WatchName.Addresses)?.watchParametersRequestMessage,
   },
   {
     name: BotCommandName.UnwatchAddresses,
     description: 'Stop getting notifications about one or more addresses.',
-    alwaysPermitted: true,
     parametersRequestMessage: watchByName.get(
       WatchName.Addresses,
     )?.unwatchParametersRequestMessage,
@@ -251,7 +242,7 @@ export const telegramCommands: BotCommand[] = [
   {
     name: BotCommandName.WatchPriceChange,
     description: 'Watch changes in the price of Bitcoin (in USD).',
-    alwaysPermitted: false,
+    permissionKey: PermissionKey.WatchPriceChange,
     parametersRequestMessage: watchByName.get(
       WatchName.PriceChange,
     )?.watchParametersRequestMessage,
@@ -259,7 +250,6 @@ export const telegramCommands: BotCommand[] = [
   {
     name: BotCommandName.UnwatchPriceChange,
     description: 'Stop getting notifications about changes in the price of Bitcoin.',
-    alwaysPermitted: true,
   },
   {
     name: BotCommandName.WatchMempoolClear,
@@ -267,42 +257,38 @@ export const telegramCommands: BotCommand[] = [
       'Get notification when all the transactions in the mempool could fit in the next block and',
       'there is room for more, and when the mempool becomes full again.',
     ].join(' '),
-    alwaysPermitted: false,
+    permissionKey: PermissionKey.WatchMempoolClear,
   },
   {
     name: BotCommandName.UnwatchMempoolClear,
     description: `Stop getting notifications of /${BotCommandName.WatchMempoolClear}.`,
-    alwaysPermitted: true,
   },
   {
     name: BotCommandName.WatchLightningChannelsOpened,
     description: 'Get notification when a lightning channel is opened.',
-    alwaysPermitted: false,
+    permissionKey: PermissionKey.WatchLightningChannelsOpened,
   },
   {
     name: BotCommandName.UnwatchLightningChannelsOpened,
     description: `Stop getting notifications of /${BotCommandName.WatchLightningChannelsOpened}.`,
-    alwaysPermitted: true,
   },
   {
     name: BotCommandName.WatchLightningChannelsClosed,
     description: 'Get notification when a lightning channel is closed.',
-    alwaysPermitted: false,
+    permissionKey: PermissionKey.WatchLightningChannelsClosed,
   },
   {
     name: BotCommandName.UnwatchLightningChannelsClosed,
     description: `Stop getting notifications of /${BotCommandName.WatchLightningChannelsClosed}.`,
-    alwaysPermitted: true,
   },
   {
     name: BotCommandName.WatchLightningForwards,
     description: 'Get notification when a lightning payment is forwarded through your node.',
-    alwaysPermitted: false,
+    permissionKey: PermissionKey.WatchLightningForwards,
   },
   {
     name: BotCommandName.UnwatchLightningForwards,
     description: `Stop getting notifications of /${BotCommandName.WatchLightningForwards}.`,
-    alwaysPermitted: true,
   },
   {
     name: BotCommandName.Links,
@@ -310,17 +296,14 @@ export const telegramCommands: BotCommand[] = [
       'Reply to a message with this command to receive links to the blocks, addresses and',
       'transactions that are mentioned in that message.',
     ].join(' '),
-    alwaysPermitted: true,
   },
   {
     name: BotCommandName.ListWatches,
     description: 'Lists all your configured watches.',
-    alwaysPermitted: true,
   },
   {
     name: BotCommandName.Quit,
     description: 'Unregister from the server.',
-    alwaysPermitted: true,
   },
 ];
 

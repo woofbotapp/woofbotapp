@@ -854,14 +854,14 @@ export class TelegrafManager {
   }
 
   static async isPermitted(user: UserFields, command: BotCommand): Promise<boolean> {
-    if (command.alwaysPermitted) {
+    if (!command.permissionKey) {
       return true;
     }
     const settings = await SettingsModel.findById(zeroObjectId);
     if (!settings) {
       throw new Error('Settings not found to check permission groups');
     }
-    const commandPermissionGroups = settings?.commandsPermissionGroups[command.name];
+    const commandPermissionGroups = settings?.commandsPermissionGroups[command.permissionKey];
     if (!commandPermissionGroups) {
       return true;
     }

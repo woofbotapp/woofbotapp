@@ -28,7 +28,9 @@ import {
   LndChannelsStatusEvent, LndNewForwardsEvent, lndWatcher, LndWatcherEventName,
   LndInvoiceUpdatedEvent,
 } from './lnd-watcher';
-import { isTransactionId, mergeDescriptionToTransactionId } from './validations';
+import {
+  isTransactionId, mergeDescriptionToAddressId, mergeDescriptionToTransactionId,
+} from './validations';
 
 interface TextMessage {
   text: string;
@@ -1680,8 +1682,9 @@ export class TelegrafManager {
   static async watchAddresses(
     ctx: TextContext,
     user: UserDocument,
-    args: string[],
+    originalArgs: string[],
   ) {
+    const args = mergeDescriptionToAddressId(originalArgs);
     const addresses: [string | undefined, string][] = [];
     for (const arg of args) {
       const parts = arg.split(':');

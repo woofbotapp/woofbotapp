@@ -1,4 +1,5 @@
 import { Types } from 'mongoose';
+import { validate } from 'bitcoin-address-validation';
 
 export const isSafeNonNegativeInteger = (
   value: unknown,
@@ -25,6 +26,28 @@ export function mergeDescriptionToTransactionId(args: string[]): string[] {
       continue;
     }
     if (isTransactionId(arg) && lastArg.endsWith(':')) {
+      result.push(`${lastArg}${arg}`);
+      lastArg = undefined;
+      continue;
+    }
+    result.push(lastArg);
+    lastArg = arg;
+  }
+  if (lastArg !== undefined) {
+    result.push(lastArg);
+  }
+  return result;
+}
+
+export function mergeDescriptionToAddressId(args: string[]): string[] {
+  const result: string[] = [];
+  let lastArg: string | undefined;
+  for (const arg of args) {
+    if (lastArg === undefined) {
+      lastArg = arg;
+      continue;
+    }
+    if (validate(arg) && lastArg.endsWith(':')) {
       result.push(`${lastArg}${arg}`);
       lastArg = undefined;
       continue;

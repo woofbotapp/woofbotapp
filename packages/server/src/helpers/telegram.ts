@@ -641,7 +641,7 @@ export class TelegrafManager {
           }\nInvoice Description:`,
       ) + (
         event.description
-          ? `\n\`\`\`${escapeMarkdown(event.description)}\`\`\``
+          ? `\n\`\`\`\n${escapeMarkdown(event.description)}\n\`\`\``
           : ` empty`
       );
       for (const user of users) {

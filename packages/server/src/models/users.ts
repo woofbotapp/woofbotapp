@@ -13,6 +13,8 @@ export interface UserFields {
   watchLightningChannelsOpened: boolean;
   watchLightningChannelsClosed: boolean;
   watchLightningForwards: boolean;
+  watchLightningInvoicesCreated: boolean;
+  watchLightningInvoicesPaid: boolean;
   permissionGroups: string[];
 }
 
@@ -27,6 +29,8 @@ const schema = new Schema<UserFields & TimeFields>({
   watchLightningChannelsOpened: { type: Boolean, required: true, index: true },
   watchLightningChannelsClosed: { type: Boolean, required: true, index: true },
   watchLightningForwards: { type: Boolean, required: true, index: true },
+  watchLightningInvoicesCreated: { type: Boolean, required: true, index: true },
+  watchLightningInvoicesPaid: { type: Boolean, required: true, index: true },
   permissionGroups: { type: [String], required: true, index: true },
 }, { timestamps: true });
 
@@ -41,6 +45,8 @@ export const defaultUserProperties: Omit<
   watchLightningChannelsOpened: false,
   watchLightningChannelsClosed: false,
   watchLightningForwards: false,
+  watchLightningInvoicesCreated: false,
+  watchLightningInvoicesPaid: false,
   permissionGroups: [],
 };
 

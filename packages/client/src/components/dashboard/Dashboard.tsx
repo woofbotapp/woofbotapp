@@ -142,8 +142,6 @@ export default function Dashboard() {
           >
             WoofBot Dashboard - v
             {AppVersion}
-            {' '}
-            (beta)
           </Typography>
           <IconButton
             color="inherit"

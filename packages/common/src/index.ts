@@ -22,6 +22,8 @@ export enum WatchName {
   LightningChannelsOpened = 'lightning-channels-opened',
   LightningChannelsClosed = 'lightning-channels-closed',
   LightningForwards = 'lightning-forwards',
+  LightningInvoicesCreated = 'lightning-invoices-created',
+  LightningInvoicesPaid = 'lightning-invoices-paid',
 }
 
 export enum PermissionKey {
@@ -34,6 +36,8 @@ export enum PermissionKey {
   WatchLightningChannelsOpened = 'watchlightningchannelsopened',
   WatchLightningChannelsClosed = 'watchlightningchannelsclosed',
   WatchLightningForwards = 'watchlightningforwards',
+  watchLightningInvoicesCreated = 'watchlightninginvoicescreated',
+  watchLightningInvoicesPaid = 'watchlightninginvoicespaid',
 }
 
 export interface Watch {
@@ -124,6 +128,16 @@ export const watches: Watch[] = [
     name: WatchName.LightningForwards,
     description: 'Get notifications when lightning payments are forwarded through your node.',
     permissionKey: PermissionKey.WatchLightningForwards,
+  },
+  {
+    name: WatchName.LightningInvoicesCreated,
+    description: 'Get notifications when your node creates lightning invoices.',
+    permissionKey: PermissionKey.watchLightningInvoicesCreated,
+  },
+  {
+    name: WatchName.LightningInvoicesPaid,
+    description: 'Get notifications when your node\'s lightning invoices are paid.',
+    permissionKey: PermissionKey.watchLightningInvoicesPaid,
   },
 ];
 

@@ -2,7 +2,7 @@ import { EventEmitter } from 'stream';
 import fs from 'fs';
 import {
   authenticatedLndGrpc, AuthenticatedLnd, getChannels, subscribeToChannels,
-  getForwards, subscribeToForwards,
+  getForwards, subscribeToForwards, subscribeToInvoices,
 } from 'lightning';
 import logger from './logger';
 import { LndChannelInformation } from '../models/settings';
@@ -13,12 +13,17 @@ export enum LndWatcherEventName {
   CheckForwards = 'checkForwards', // internal
   ChannelsStatus = 'channelStatus',
   NewForwards = 'newForward',
+  InvoiceUpdated = 'invoiceUpdated',
 }
 
 export interface LndChannelsStatusEvent {
   addedChannels: LndChannelInformation[];
   removedChannels: LndChannelInformation[];
   allChannels: LndChannelInformation[];
+}
+
+export interface LndInvoiceUpdatedEvent {
+
 }
 
 interface ForwardInformation {
@@ -72,6 +77,8 @@ class LndWatcher extends EventEmitter {
   private isCheckingForwards: boolean = false;
 
   private shouldRecheckForwards: boolean = false;
+
+  private invoicesSubscriber: EventEmitter | undefined;
 
   constructor() {
     super();
@@ -158,6 +165,16 @@ class LndWatcher extends EventEmitter {
       () => this.emit(LndWatcherEventName.CheckForwards),
       delayedCheckTimeoutMs,
     );
+    this.invoicesSubscriber = subscribeToInvoices({ lnd });
+    this.invoicesSubscriber.on('invoice_updated', (event) => {
+      try {
+        this.emit(LndWatcherEventName.InvoiceUpdated, event);
+      } catch (error) {
+        logger.error(`invoicesSubscriber: Failed to emit invoice_updated event ${
+          errorString(event)
+        }`);
+      }
+    });
   }
 
   private checkChannelsSafe() {

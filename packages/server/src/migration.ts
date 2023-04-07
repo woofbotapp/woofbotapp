@@ -144,8 +144,47 @@ async function migrateV7(): Promise<void> {
   );
 }
 
+async function migrateV8(): Promise<void> {
+  await UsersModel.updateMany(
+    {
+      watchLightningInvoicesCreated: {
+        $exists: false,
+      },
+    },
+    {
+      $set: {
+        watchLightningInvoicesCreated: false,
+      },
+    },
+  );
+  await UsersModel.updateMany(
+    {
+      watchLightningInvoicesPaid: {
+        $exists: false,
+      },
+    },
+    {
+      $set: {
+        watchLightningInvoicesPaid: false,
+      },
+    },
+  );
+  await SettingsModel.updateOne(
+    {
+      _id: zeroObjectId,
+    },
+    {
+      $set: {
+        [`commandsPermissionGroups.${PermissionKey.watchLightningInvoicesCreated}`]: [],
+        [`commandsPermissionGroups.${PermissionKey.watchLightningInvoicesPaid}`]: [],
+      },
+    },
+  );
+}
+
 const migrations = [
   migrateV0, migrateV1, migrateV2, migrateV3, migrateV4, migrateV5, migrateV6, migrateV7,
+  migrateV8,
 ];
 
 export const migrationsLength = migrations.length;

@@ -11,3 +11,29 @@ export const isShortString = (
 export const isValidObjectIdString = (
   value: unknown,
 ): value is string => (typeof value === 'string') && Types.ObjectId.isValid(value);
+
+export const isTransactionId = (
+  value: string,
+) => (value.length === 64) && /^[0-9a-f]{64}$/.test(value);
+
+export function mergeDescriptionToTransactionId(args: string[]): string[] {
+  const result: string[] = [];
+  let lastArg: string | undefined;
+  for (const arg of args) {
+    if (lastArg === undefined) {
+      lastArg = arg;
+      continue;
+    }
+    if (isTransactionId(arg) && lastArg.endsWith(':')) {
+      result.push(`${lastArg}${arg}`);
+      lastArg = undefined;
+      continue;
+    }
+    result.push(lastArg);
+    lastArg = arg;
+  }
+  if (lastArg !== undefined) {
+    result.push(lastArg);
+  }
+  return result;
+}

@@ -28,6 +28,7 @@ import {
   LndChannelsStatusEvent, LndNewForwardsEvent, lndWatcher, LndWatcherEventName,
   LndInvoiceUpdatedEvent,
 } from './lnd-watcher';
+import { isTransactionId, mergeDescriptionToTransactionId } from './validations';
 
 interface TextMessage {
   text: string;
@@ -1467,14 +1468,15 @@ export class TelegrafManager {
     ctx.replyWithMarkdownV2(escapeMarkdown('Stopped watching new blocks.'));
   }
 
-  async watchTransaction(ctx: TextContext, user: UserDocument, args: string[]) {
+  async watchTransaction(ctx: TextContext, user: UserDocument, originalArgs: string[]) {
+    const args = mergeDescriptionToTransactionId(originalArgs);
     if (args.length > 1) {
       ctx.replyWithMarkdownV2(escapeMarkdown('Too many parameters'));
       return;
     }
     const parts = args[0].split(':');
     const txid = parts.pop();
-    if (!txid || (txid.length !== 64) || !/^[0-9a-f]{64}$/.test(txid)) {
+    if (!txid || !isTransactionId(txid)) {
       ctx.replyWithMarkdownV2(escapeMarkdown('Invalid transaction id - expected 64 hex chars in lowecase.'));
       return;
     }

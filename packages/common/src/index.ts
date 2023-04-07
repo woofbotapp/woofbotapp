@@ -171,10 +171,6 @@ export const telegramCommands: BotCommand[] = [
     description: 'Shows help about available commands.',
   },
   {
-    name: BotCommandName.WhoAmI,
-    description: 'Replies with your username and ids.',
-  },
-  {
     name: BotCommandName.Watch,
     description: 'Start getting notifications for events.',
   },
@@ -192,6 +188,10 @@ export const telegramCommands: BotCommand[] = [
   {
     name: BotCommandName.ListWatches,
     description: 'Lists all your configured watches.',
+  },
+  {
+    name: BotCommandName.WhoAmI,
+    description: 'Replies with your username and ids.',
   },
   {
     name: BotCommandName.Quit,

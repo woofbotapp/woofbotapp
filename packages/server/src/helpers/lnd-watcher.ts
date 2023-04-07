@@ -2,7 +2,7 @@ import { EventEmitter } from 'stream';
 import fs from 'fs';
 import {
   authenticatedLndGrpc, AuthenticatedLnd, getChannels, subscribeToChannels,
-  getForwards, subscribeToForwards, subscribeToInvoices,
+  getForwards, subscribeToForwards, subscribeToInvoices, SubscribeToInvoicesInvoiceUpdatedEvent,
 } from 'lightning';
 import logger from './logger';
 import { LndChannelInformation } from '../models/settings';
@@ -22,10 +22,6 @@ export interface LndChannelsStatusEvent {
   allChannels: LndChannelInformation[];
 }
 
-export interface LndInvoiceUpdatedEvent {
-
-}
-
 interface ForwardInformation {
   createdAt: Date; // original created_at is a string
   fee: number;
@@ -41,6 +37,10 @@ export interface LndNewForwardsEvent {
   tooMany: boolean;
   lastForwardAt: Date;
   lastForwardCount: number;
+}
+
+export interface LndInvoiceUpdatedEvent extends SubscribeToInvoicesInvoiceUpdatedEvent {
+  mtokens?: string; // api may have changed at some point
 }
 
 const delayedCheckTimeoutMs = 1_000;

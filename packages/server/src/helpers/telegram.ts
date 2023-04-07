@@ -26,6 +26,7 @@ import { zeroObjectId } from './mongo';
 import { PriceChangeEvent, priceWatcher, PriceWatcherEventName } from './price-watcher';
 import {
   LndChannelsStatusEvent, LndNewForwardsEvent, lndWatcher, LndWatcherEventName,
+  LndInvoiceUpdatedEvent,
 } from './lnd-watcher';
 
 interface TextMessage {
@@ -161,6 +162,10 @@ export class TelegrafManager {
     lndWatcher.on(
       LndWatcherEventName.NewForwards,
       (event) => this.onLndNewForwards(event),
+    );
+    lndWatcher.on(
+      LndWatcherEventName.InvoiceUpdated,
+      (event) => this.onLndInvoiceUpdated(event),
     );
   }
 
@@ -589,6 +594,52 @@ export class TelegrafManager {
             : ''
           }`
           : '✨ Woof! There were too many forwardings at the same second to display here.',
+      );
+      for (const user of users) {
+        // eslint-disable-next-line no-await-in-loop
+        await this.sendMessage({
+          chatId: user.telegramChatId,
+          text: message,
+        });
+      }
+    } catch (error) {
+      logger.error(`onLndNewForwards: failed ${errorString(error)}`);
+    }
+  }
+
+  private async onLndInvoiceUpdated(event: LndInvoiceUpdatedEvent) {
+    try {
+      if (event.is_outgoing) {
+        return;
+      }
+      logger.info(`onLndInvoiceUpdated: ${event.id} ${event.confirmed_at ?? 'unconfirmed'}`);
+      const users = await UsersModel.find(
+        event.confirmed_at
+          ? {
+            watchLightningInvoicesPaid: true,
+          }
+          : {
+            watchLightningInvoicesCreated: true,
+          },
+      );
+      const message = escapeMarkdown(
+        event.confirmed_at
+          ? `⚡ Woof! You have received a lightning payment of 丰${
+            mSatsToSats(event.received_mtokens)
+          } at ${prettyDate(event.confirmed_at)}\nInvoice Creation Time: ${
+            prettyDate(event.created_at)
+          }\nInvoice Description:`
+          : `🧾 Woof! Your node has created an invoice for ${
+            event.mtokens ? `丰${mSatsToSats(event.mtokens)}` : 'unknown amount'
+          } at ${
+            prettyDate(event.created_at)
+          }\nInvoice Expiration: ${
+            prettyDate(event.expires_at)
+          }\nInvoice Description:`,
+      ) + (
+        event.description
+          ? `\n\`\`\`${escapeMarkdown(event.description)}\`\`\``
+          : ` empty`
       );
       for (const user of users) {
         // eslint-disable-next-line no-await-in-loop
@@ -1269,6 +1320,10 @@ export class TelegrafManager {
         return TelegrafManager.watchLightningChannelsClosed(ctx, user);
       case WatchName.LightningForwards:
         return TelegrafManager.watchLightningForwards(ctx, user);
+      case WatchName.LightningInvoicesCreated:
+        return TelegrafManager.watchLightningInvoicesCreated(ctx, user);
+      case WatchName.LightningInvoicesPaid:
+        return TelegrafManager.watchLightningInvoicesPaid(ctx, user);
       default:
         break;
     }
@@ -1331,6 +1386,10 @@ export class TelegrafManager {
         return TelegrafManager.unwatchLightningChannelsClosed(ctx, user);
       case WatchName.LightningForwards:
         return TelegrafManager.unwatchLightningForwards(ctx, user);
+      case WatchName.LightningInvoicesCreated:
+        return TelegrafManager.unwatchLightningInvoicesCreated(ctx, user);
+      case WatchName.LightningInvoicesPaid:
+        return TelegrafManager.unwatchLightningInvoicesPaid(ctx, user);
       default:
         break;
     }
@@ -2006,6 +2065,106 @@ export class TelegrafManager {
     ));
   }
 
+  static async watchLightningInvoicesCreated(
+    ctx: TextContext,
+    user: UserDocument,
+  ) {
+    if (!lndWatcher.isRunning()) {
+      ctx.replyWithMarkdownV2(escapeMarkdown(
+        'Sorry, the LND integration is not configured.',
+      ));
+      return;
+    }
+    await UsersModel.updateOne(
+      {
+        _id: user._id,
+      },
+      {
+        $set: {
+          watchLightningInvoicesCreated: true,
+        },
+      },
+    );
+    ctx.replyWithMarkdownV2(escapeMarkdown(
+      'Started watching for lightning invoices creation.',
+    ));
+  }
+
+  static async unwatchLightningInvoicesCreated(
+    ctx: TextContext,
+    user: UserDocument,
+  ) {
+    if (!lndWatcher.isRunning()) {
+      ctx.replyWithMarkdownV2(escapeMarkdown(
+        'Sorry, the LND integration is not configured.',
+      ));
+      return;
+    }
+    await UsersModel.updateOne(
+      {
+        _id: user._id,
+      },
+      {
+        $set: {
+          watchLightningInvoicesCreated: false,
+        },
+      },
+    );
+    ctx.replyWithMarkdownV2(escapeMarkdown(
+      'Stopped watching for lightning invoices creation.',
+    ));
+  }
+
+  static async watchLightningInvoicesPaid(
+    ctx: TextContext,
+    user: UserDocument,
+  ) {
+    if (!lndWatcher.isRunning()) {
+      ctx.replyWithMarkdownV2(escapeMarkdown(
+        'Sorry, the LND integration is not configured.',
+      ));
+      return;
+    }
+    await UsersModel.updateOne(
+      {
+        _id: user._id,
+      },
+      {
+        $set: {
+          watchLightningInvoicesPaid: true,
+        },
+      },
+    );
+    ctx.replyWithMarkdownV2(escapeMarkdown(
+      'Started watching for lightning invoices being paid.',
+    ));
+  }
+
+  static async unwatchLightningInvoicesPaid(
+    ctx: TextContext,
+    user: UserDocument,
+  ) {
+    if (!lndWatcher.isRunning()) {
+      ctx.replyWithMarkdownV2(escapeMarkdown(
+        'Sorry, the LND integration is not configured.',
+      ));
+      return;
+    }
+    await UsersModel.updateOne(
+      {
+        _id: user._id,
+      },
+      {
+        $set: {
+          watchLightningInvoicesPaid: false,
+        },
+      },
+    );
+    ctx.replyWithMarkdownV2(escapeMarkdown(
+      'Stopped watching for lightning invoices being paid.',
+    ));
+  }
+
   static async [BotCommandName.Links](ctx: TextContext) {
     const replyToMessage = ctx.message.reply_to_message;
     if (!replyToMessage) {
@@ -2070,6 +2229,12 @@ export class TelegrafManager {
     }
     if (user.watchLightningForwards) {
       lines.push(escapeMarkdown('You are watching lightning forwards.'));
+    }
+    if (user.watchLightningInvoicesCreated) {
+      lines.push(escapeMarkdown('You are watching lightning invoices creation.'));
+    }
+    if (user.watchLightningInvoicesPaid) {
+      lines.push(escapeMarkdown('You are watching lightning invoices being paid.'));
     }
     const watchedTransactions = await WatchedTransactionsModel.find({
       userId: user._id,

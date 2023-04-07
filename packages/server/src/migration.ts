@@ -1,4 +1,4 @@
-import { BotCommandName } from '@woofbot/common';
+import { PermissionKey } from '@woofbot/common';
 
 import logger from './helpers/logger';
 import { zeroObjectId } from './helpers/mongo';
@@ -97,8 +97,8 @@ async function migrateV5(): Promise<void> {
     },
     {
       $set: {
-        [`commandsPermissionGroups.${BotCommandName.WatchLightningChannelsOpened}`]: [],
-        [`commandsPermissionGroups.${BotCommandName.WatchLightningChannelsClosed}`]: [],
+        [`commandsPermissionGroups.${PermissionKey.WatchLightningChannelsOpened}`]: [],
+        [`commandsPermissionGroups.${PermissionKey.WatchLightningChannelsClosed}`]: [],
       },
     },
   );
@@ -138,7 +138,7 @@ async function migrateV7(): Promise<void> {
     },
     {
       $set: {
-        [`commandsPermissionGroups.${BotCommandName.WatchLightningForwards}`]: [],
+        [`commandsPermissionGroups.${PermissionKey.WatchLightningForwards}`]: [],
       },
     },
   );

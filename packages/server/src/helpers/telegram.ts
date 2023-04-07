@@ -80,6 +80,18 @@ const telegramCommandByParametersRequestMessage = new Map(
   ).map((telegramCommand) => [telegramCommand.parametersRequestMessage, telegramCommand]),
 );
 
+const watchByParametersRequestMessage = new Map(
+  watches.filter(
+    (watch) => watch.watchParametersRequestMessage,
+  ).map((watch) => [watch.watchParametersRequestMessage, watch]),
+);
+
+const unwatchByParametersRequestMessage = new Map(
+  watches.filter(
+    (watch) => watch.unwatchParametersRequestMessage,
+  ).map((watch) => [watch.unwatchParametersRequestMessage, watch]),
+);
+
 const filteredTelegramCommands = telegramCommands.filter(
   ({ name }) => ![BotCommandName.Help, BotCommandName.Start].includes(name),
 );
@@ -1054,14 +1066,12 @@ export class TelegrafManager {
         try {
           const textContext = ctx as TextContext;
           const replyToMessageText = textContext.message.reply_to_message?.text;
-          const telegramCommand = (
-            replyToMessageText && telegramCommandByParametersRequestMessage.get(
+          const args = ctx.message.text.trim().split(/\s+/).filter((arg) => arg);
+          if (replyToMessageText && args.length > 0) {
+            const telegramCommand = telegramCommandByParametersRequestMessage.get(
               replyToMessageText,
-            )
-          );
-          if (telegramCommand) {
-            const args = ctx.message.text.trim().split(/\s+/).filter((arg) => arg);
-            if (args.length > 0) {
+            );
+            if (telegramCommand) {
               const user = ctx.from?.id && await UsersModel.findOne(
                 {
                   telegramFromId: ctx.from.id,
@@ -1078,6 +1088,67 @@ export class TelegrafManager {
               }
               await this.runCommand(telegramCommand.name, textContext, user, args);
               return;
+            }
+            const watch = watchByParametersRequestMessage.get(
+              replyToMessageText,
+            );
+            if (watch) {
+              const user = ctx.from?.id && await UsersModel.findOne(
+                {
+                  telegramFromId: ctx.from.id,
+                },
+              );
+              if (!user) {
+                await ctx.replyWithMarkdownV2(notFoundMessage);
+                return;
+              }
+              const { permissionKey } = watch;
+              if (permissionKey && !await TelegrafManager.isPermitted(user, permissionKey)) {
+                ctx.replyWithMarkdownV2(notPermittedMessage);
+                return;
+              }
+              switch (watch.name) {
+                case WatchName.Transaction:
+                  await this.watchTransaction(textContext, user, args);
+                  return;
+                case WatchName.Addresses:
+                  await TelegrafManager.watchAddresses(textContext, user, args);
+                  return;
+                case WatchName.PriceChange:
+                  await TelegrafManager.watchPriceChange(textContext, user, args);
+                  return;
+                default:
+                  break;
+              }
+            }
+            const unwatch = unwatchByParametersRequestMessage.get(
+              replyToMessageText,
+            );
+            if (unwatch) {
+              const user = ctx.from?.id && await UsersModel.findOne(
+                {
+                  telegramFromId: ctx.from.id,
+                },
+              );
+              if (!user) {
+                await ctx.replyWithMarkdownV2(notFoundMessage);
+                return;
+              }
+              const { permissionKey } = unwatch;
+              if (permissionKey && !await TelegrafManager.isPermitted(user, permissionKey)) {
+                ctx.replyWithMarkdownV2(notPermittedMessage);
+                return;
+              }
+              switch (unwatch.name) {
+                case WatchName.Transaction:
+                  await TelegrafManager.unwatchTransactions(textContext, user, args);
+                  return;
+                case WatchName.Addresses:
+                  await TelegrafManager.unwatchAddresses(textContext, user, args);
+                  return;
+                default:
+                  break;
+              }
             }
           }
           await ctx.replyWithMarkdownV2(escapeMarkdown(

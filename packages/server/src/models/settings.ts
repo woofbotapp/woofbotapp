@@ -72,6 +72,8 @@ export const defaultSettings: Omit<SettingsFields, 'migrationVersion'> = {
     [PermissionKey.WatchLightningChannelsOpened]: [],
     [PermissionKey.WatchLightningChannelsClosed]: [],
     [PermissionKey.WatchLightningForwards]: [],
+    [PermissionKey.WatchLightningInvoicesCreated]: [],
+    [PermissionKey.WatchLightningInvoicesPaid]: [],
   },
 };
 

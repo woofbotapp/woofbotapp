@@ -36,8 +36,8 @@ export enum PermissionKey {
   WatchLightningChannelsOpened = 'watchlightningchannelsopened',
   WatchLightningChannelsClosed = 'watchlightningchannelsclosed',
   WatchLightningForwards = 'watchlightningforwards',
-  watchLightningInvoicesCreated = 'watchlightninginvoicescreated',
-  watchLightningInvoicesPaid = 'watchlightninginvoicespaid',
+  WatchLightningInvoicesCreated = 'watchlightninginvoicescreated',
+  WatchLightningInvoicesPaid = 'watchlightninginvoicespaid',
 }
 
 export interface Watch {
@@ -132,12 +132,12 @@ export const watches: Watch[] = [
   {
     name: WatchName.LightningInvoicesCreated,
     description: 'Get notifications when your node creates lightning invoices.',
-    permissionKey: PermissionKey.watchLightningInvoicesCreated,
+    permissionKey: PermissionKey.WatchLightningInvoicesCreated,
   },
   {
     name: WatchName.LightningInvoicesPaid,
     description: 'Get notifications when your node\'s lightning invoices are paid.',
-    permissionKey: PermissionKey.watchLightningInvoicesPaid,
+    permissionKey: PermissionKey.WatchLightningInvoicesPaid,
   },
 ];
 

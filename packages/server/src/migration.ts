@@ -175,8 +175,8 @@ async function migrateV8(): Promise<void> {
     },
     {
       $set: {
-        [`commandsPermissionGroups.${PermissionKey.watchLightningInvoicesCreated}`]: [],
-        [`commandsPermissionGroups.${PermissionKey.watchLightningInvoicesPaid}`]: [],
+        [`commandsPermissionGroups.${PermissionKey.WatchLightningInvoicesCreated}`]: [],
+        [`commandsPermissionGroups.${PermissionKey.WatchLightningInvoicesPaid}`]: [],
       },
     },
   );

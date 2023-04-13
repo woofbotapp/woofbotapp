@@ -794,6 +794,7 @@ export class TelegrafManager {
         message.chatId,
         `${message.text}${sponsorship}`,
         {
+          disable_web_page_preview: true,
           parse_mode: 'MarkdownV2',
         },
       );
@@ -878,6 +879,7 @@ export class TelegrafManager {
             'The following message has been sent with delay due to networking issues:\n\n',
           )}${message.text}${sponsorship}`,
           {
+            disable_web_page_preview: true,
             parse_mode: 'MarkdownV2',
           },
         );
@@ -1001,7 +1003,7 @@ export class TelegrafManager {
               },
             );
           }
-          await ctx.replyWithMarkdownV2(startMessage);
+          await ctx.replyWithMarkdownV2(startMessage, { disable_web_page_preview: true });
         } catch (error) {
           logger.error(
             `TelegrafManager: Failed to run start for chat-id ${

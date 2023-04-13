@@ -49,7 +49,9 @@ function prettyBlockHash(blockHash: string): string {
   return `0..0${blockHash.replace(/^0+/, '')}`;
 }
 
-const sponsorship = `\n\n*Follow us on Twitter: [@woofbotapp](https://twitter.com/woofbotapp)*`;
+const sponsorship = `\n\n*Follow us on [Nostr \\(@woofbot\\)]\
+(https://snort.social/woofbot@protonmail.com.ln2.email)\
+ or on [Twitter \\(@woofbotapp\\)](https://twitter.com/woofbotapp)*`;
 
 const startMessage = `${escapeMarkdown(`\
 🐶 Welcome to WoofBot, your personal telegram bot that will send you customized notifications.

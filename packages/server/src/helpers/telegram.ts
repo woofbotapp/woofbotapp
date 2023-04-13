@@ -55,8 +55,8 @@ const sponsorship = `\n\n*Follow us on [Nostr \\(@woofbot\\)]\
 
 const startMessage = `${escapeMarkdown(`\
 🐶 Welcome to WoofBot, your personal telegram bot that will send you customized notifications.
-For example, to get a notification whenever the server reboots, call /watchreboot.
-To unset this configuration, call /unwatchreboot.
+For example, to get a notification whenever the server reboots, call /watch reboot.
+To unset this configuration, call /unwatch reboot.
 For a list of all commands, call /help.`)}${sponsorship}`;
 
 const notFoundMessage = escapeMarkdown('Woof! Call /start first.');

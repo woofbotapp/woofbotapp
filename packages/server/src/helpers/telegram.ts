@@ -1,6 +1,6 @@
 import {
   TelegramStatus, telegramCommands, BotCommandName, mSatsToSats, prettyDate, WatchName, watches,
-  watchByName, PermissionKey,
+  watchByName, PermissionKey, AppVersion, AppName,
 } from '@woofbot/common';
 import { Context, Telegraf, TelegramError } from 'telegraf';
 import { validate } from 'bitcoin-address-validation';
@@ -54,7 +54,7 @@ const sponsorship = `\n\n*Follow us on [Nostr \\(@woofbot\\)]\
  or on [Twitter \\(@woofbotapp\\)](https://twitter.com/woofbotapp)*`;
 
 const startMessage = `${escapeMarkdown(`\
-🐶 Welcome to WoofBot, your personal telegram bot that will send you customized notifications.
+🐶 Welcome to ${AppName}, your personal telegram bot that will send you customized notifications.
 For example, to get a notification whenever the server reboots, call /watch reboot.
 To unset this configuration, call /unwatch reboot.
 For a list of all commands, call /help.`)}${sponsorship}`;
@@ -1104,7 +1104,7 @@ export class TelegrafManager {
             await this.runCommand(command.name, ctx as TextContext, user, args);
           } catch (error) {
             logger.error(
-              `TelegrafManager: Failed to run command ${command} for chat-id ${
+              `TelegrafManager: Failed to run command ${command.name} for chat-id ${
                 ctx.chat.id
               }: ${errorString(error)}`,
             );
@@ -1279,6 +1279,29 @@ export class TelegrafManager {
         user.telegramFromId
       }, local-id ${user.id}`,
     ));
+  }
+
+  static async [BotCommandName.About](ctx: TextContext) {
+    try {
+      const bitcoindInfo = await bitcoindWatcher.getInfo();
+      const match = bitcoindInfo.version.match(/^\/Satoshi:(.+)\/$/);
+      ctx.replyWithMarkdownV2(escapeMarkdown(
+        `🐶 ${AppName} v${AppVersion}\nBitcoin node version: ${
+          match?.[1] ?? bitcoindInfo.version
+        }\nBitcoin chain: ${bitcoindInfo.chain}\n${
+          lndWatcher.isRunning()
+            ? `LND version: ${
+              (await lndWatcher.lndVersion()) || 'unknown'
+            }`
+            : 'LND: not connected'
+        }`,
+      ));
+    } catch (error) {
+      logger.error(`Failed to run about command: ${errorString(error)}`);
+      ctx.replyWithMarkdownV2(escapeMarkdown(
+        `Failed to get server info (${AppName} v${AppVersion}), server might still be booting.`,
+      ));
+    }
   }
 
   async [BotCommandName.Watch](

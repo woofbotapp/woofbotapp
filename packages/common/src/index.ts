@@ -152,6 +152,7 @@ export enum BotCommandName {
   Quit = 'quit',
   ListWatches = 'listwatches',
   Links = 'links',
+  About = 'about'
 }
 
 export interface BotCommand {
@@ -192,6 +193,10 @@ export const telegramCommands: BotCommand[] = [
   {
     name: BotCommandName.WhoAmI,
     description: 'Replies with your username and ids.',
+  },
+  {
+    name: BotCommandName.About,
+    description: 'Replies with server information.',
   },
   {
     name: BotCommandName.Quit,

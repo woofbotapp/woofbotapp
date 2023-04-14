@@ -673,7 +673,7 @@ export class TelegrafManager {
         });
       }
     } catch (error) {
-      logger.error(`onLndNewForwards: failed ${errorString(error)}`);
+      logger.error(`onLndInvoiceUpdated: failed ${errorString(error)}`);
     }
   }
 

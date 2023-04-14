@@ -3,24 +3,26 @@ import Typography from '@mui/material/Typography';
 
 import ExternalLink from '../external-link/ExternalLink';
 
-const contactEmail = 'woofbot@protonmail.com';
-
 export default function Copyright() {
   return (
     <Typography variant="body2" color="text.secondary" align="center" sx={{ mt: 8, mb: 4 }}>
-      {'Copyright © '}
-      <ExternalLink href="https://twitter.com/woofbotapp">
-        WoofBot
-      </ExternalLink>
-      {' '}
+      {'Copyright © WoofBot '}
       {new Date().getFullYear()}
       .
       <br />
-      Your sponsorship can be here!
-      <br />
-      <ExternalLink href={`mailto:${contactEmail}`}>
-        {contactEmail}
+      <ExternalLink href="https://snort.social/woofbot%40protonmail.com.ln2.email">
+        Nostr
       </ExternalLink>
+      {' | '}
+      <ExternalLink href="https://twitter.com/woofbotapp">
+        Twitter
+      </ExternalLink>
+      {' | '}
+      <ExternalLink href="mailto:woofbot@protonmail.com">
+        Email
+      </ExternalLink>
+      <br />
+      Your sponsorship can be here!
     </Typography>
   );
 }

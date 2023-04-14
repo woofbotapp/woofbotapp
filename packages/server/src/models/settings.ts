@@ -8,6 +8,7 @@ type CommandsPermissionGroupsMap = Partial<Record<PermissionKey, string[]>>;
 export interface LndChannelInformation {
   channelId: string; // "id" may conflict with mongodb stuff
   lastActiveAt?: Date;
+  partnerName?: string;
 }
 
 interface SettingsFields {
@@ -41,6 +42,7 @@ const lndChannelSchema = new Schema<LndChannelInformation>(
   {
     channelId: { type: String, required: true },
     lastActiveAt: { type: Date, required: false },
+    partnerName: { type: String, required: false },
   },
   {
     _id: false,

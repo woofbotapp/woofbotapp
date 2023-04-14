@@ -3,6 +3,7 @@ import fs from 'fs';
 import {
   authenticatedLndGrpc, AuthenticatedLnd, getChannels, subscribeToChannels,
   getForwards, subscribeToForwards, subscribeToInvoices, SubscribeToInvoicesInvoiceUpdatedEvent,
+  getNode,
 } from 'lightning';
 import logger from './logger';
 import { LndChannelInformation } from '../models/settings';
@@ -46,6 +47,34 @@ export interface LndInvoiceUpdatedEvent extends SubscribeToInvoicesInvoiceUpdate
 const delayedCheckTimeoutMs = 1_000;
 const recheckGraceMs = 15_000;
 const getForwardsLimit = 50;
+const getNodeNameRetryMs = 3_000;
+const getNodeNameRetries = 3;
+
+async function getNodeName(lnd: AuthenticatedLnd, publicKey: string): Promise<string> {
+  try {
+    for (let attempt = 0; attempt < getNodeNameRetries; attempt += 1) {
+      logger.info(`getNodeName: ${publicKey} attempt ${attempt} start`);
+      // eslint-disable-next-line no-await-in-loop
+      const nodeInfo = await getNode({
+        lnd,
+        is_omitting_channels: true,
+        public_key: publicKey,
+      });
+      if (nodeInfo.alias) {
+        logger.info(`getNodeName: ${publicKey} attempt ${attempt} success`);
+        return nodeInfo.alias;
+      }
+      logger.info(`getNodeName: ${publicKey} attempt ${attempt} failed`);
+      // eslint-disable-next-line no-await-in-loop
+      await new Promise((resolve) => {
+        setTimeout(resolve, getNodeNameRetryMs);
+      });
+    }
+  } catch (error) {
+    logger.error(`getNodeName: ${publicKey}: ${errorString(error)}`);
+  }
+  return publicKey;
+}
 
 interface LndWatcherStartOptions {
   savedChannels: LndChannelInformation[] | undefined;
@@ -190,22 +219,28 @@ class LndWatcher extends EventEmitter {
   private async checkChannels() {
     try {
       logger.info('checkChannels: started');
-      if (!this.lnd) {
+      const { lnd } = this;
+      if (!lnd) {
         throw new Error('checkChannels: lnd is not defined');
       }
-      const { channels } = await getChannels({ lnd: this.lnd });
+      const { channels } = await getChannels({ lnd });
+      const channelsMap = new Map(channels.map((c) => [c.id, c]));
       const now = new Date();
-      const allChannels = channels.map((channel) => ({
-        channelId: channel.id,
-        lastActiveAt: channel.is_active ? now : this.savedChannels?.get(channel.id)?.lastActiveAt,
-      }));
+      const allChannels: LndChannelInformation[] = await Promise.all(
+        channels.map(async (channel) => ({
+          channelId: channel.id,
+          lastActiveAt: channel.is_active
+            ? now
+            : this.savedChannels?.get(channel.id)?.lastActiveAt,
+          partnerName: await getNodeName(lnd, channel.partner_public_key),
+        })),
+      );
       const addedChannels: LndChannelInformation[] = allChannels.filter(
         ({ channelId }) => !this.savedChannels?.has(channelId),
       );
-      const allChannelIds = new Set(channels.map((channel) => channel.id));
-      const removedChannels = [
+      const removedChannels: LndChannelInformation[] = [
         ...this.savedChannels?.values() ?? [],
-      ].filter(({ channelId }) => !allChannelIds.has(channelId));
+      ].filter(({ channelId }) => !channelsMap.has(channelId));
       this.savedChannels = new Map(allChannels.map((c) => [c.channelId, c]));
       const event: LndChannelsStatusEvent = {
         addedChannels,

@@ -538,11 +538,13 @@ export class TelegrafManager {
         const openedChannelsUsers = await UsersModel.find({
           watchLightningChannelsOpened: true,
         });
-        const message = escapeMarkdown(
-          event.addedChannels.length === 1
-            ? '🤝 Woof! A new lightning channel was opened: '
-            : '🤝 Woof! New lightning channels were opened: ',
-        ) + event.addedChannels.map(channelFullName).join(escapeMarkdown(', '));
+        const message = `${
+          escapeMarkdown(
+            event.addedChannels.length === 1
+              ? '🤝 Woof! A new lightning channel was opened: '
+              : '🤝 Woof! New lightning channels were opened: ',
+          )
+        }${event.addedChannels.map(channelFullName).join(escapeMarkdown(', '))}`;
         for (const user of openedChannelsUsers) {
           // eslint-disable-next-line no-await-in-loop
           await this.sendMessage({
@@ -555,11 +557,13 @@ export class TelegrafManager {
         const closedChannelsUsers = await UsersModel.find({
           watchLightningChannelsClosed: true,
         });
-        const message = escapeMarkdown(
-          event.removedChannels.length === 1
-            ? '🙌 Woof! A lightning channel was closed: '
-            : '🙌 Woof! Some lightning channels were closed: ',
-        ) + event.removedChannels.map(channelFullName).join(escapeMarkdown(', '));
+        const message = `${
+          escapeMarkdown(
+            event.removedChannels.length === 1
+              ? '🙌 Woof! A lightning channel was closed: '
+              : '🙌 Woof! Some lightning channels were closed: ',
+          )
+        }${event.removedChannels.map(channelFullName).join(escapeMarkdown(', '))}`;
         for (const user of closedChannelsUsers) {
           // eslint-disable-next-line no-await-in-loop
           await this.sendMessage({

@@ -28,8 +28,10 @@ interface ForwardInformation {
   fee: number;
   fee_mtokens: string;
   incoming_channel: string;
+  incomingPartnerName?: string;
   mtokens: string;
   outgoing_channel: string;
+  outgoingPartnerName?: string;
   tokens: number;
 }
 
@@ -49,6 +51,7 @@ const recheckGraceMs = 15_000;
 const getForwardsLimit = 50;
 const getNodeNameRetryMs = 3_000;
 const getNodeNameRetries = 3;
+const checkChannelsIntervalMs = 3_600_000;
 
 async function getNodeName(lnd: AuthenticatedLnd, publicKey: string): Promise<string> {
   try {
@@ -177,6 +180,9 @@ class LndWatcher extends EventEmitter {
     ]) {
       this.channelsSubscriber.on(eventName, delayedCheckChannels);
     }
+    // Will check if partners changed their names:
+    const checkChannelsInterval = setInterval(delayedCheckChannels, checkChannelsIntervalMs);
+    checkChannelsInterval.unref();
     this.delayedCheckChannelsTimeout = setTimeout(
       () => this.emit(LndWatcherEventName.CheckChannels),
       delayedCheckTimeoutMs,
@@ -332,7 +338,11 @@ class LndWatcher extends EventEmitter {
         this.lastForwardAt
       }, new lastForwardCount is ${this.lastForwardCount}`);
       const event: LndNewForwardsEvent = {
-        forwards: datedForwards,
+        forwards: datedForwards.map((forward) => ({
+          ...forward,
+          incomingPartnerName: this.savedChannels?.get(forward.incoming_channel)?.partnerName,
+          outgoingPartnerName: this.savedChannels?.get(forward.outgoing_channel)?.partnerName,
+        })),
         tooMany,
         lastForwardAt: this.lastForwardAt,
         lastForwardCount: this.lastForwardCount,

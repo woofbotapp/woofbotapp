@@ -594,26 +594,27 @@ export class TelegrafManager {
       const users = await UsersModel.find({
         watchLightningForwards: true,
       });
-      const message = escapeMarkdown(
-        event.forwards.length > 0
-          ? `✨ Woof! You have earned lightning fees: ${
-            event.forwards.map((forward) => `丰${
-              mSatsToSats(forward.fee_mtokens)
-            } for forwarding 丰${
-              mSatsToSats(forward.mtokens)
-            } at ${
-              prettyDate(forward.createdAt.toJSON())
-            } from channel ${
-              forward.incoming_channel
-            } to channel ${
-              forward.outgoing_channel
-            }`).join(', ')
-          }${event.tooMany
-            ? '\n, and there were more forwardings, too many to display here.'
-            : ''
-          }`
-          : '✨ Woof! There were too many forwardings at the same second to display here.',
-      );
+      const message = event.forwards.length > 0
+        ? `${escapeMarkdown(`✨ Woof! You have earned lightning fees:`)} ${
+          event.forwards.map((forward) => {
+            const fromChannelName = channelFullName({
+              channelId: forward.incoming_channel, partnerName: forward.incomingPartnerName,
+            });
+            const toChannelName = channelFullName({
+              channelId: forward.outgoing_channel, partnerName: forward.outgoingPartnerName,
+            });
+            return `${
+              escapeMarkdown(`丰${mSatsToSats(forward.fee_mtokens)} for forwarding 丰${
+                mSatsToSats(forward.mtokens)
+              } at ${prettyDate(forward.createdAt.toJSON())} from `)
+            }${fromChannelName}${
+              escapeMarkdown(' to ')
+            }${toChannelName}`;
+          }).join(escapeMarkdown(', '))
+        }`
+        : escapeMarkdown(
+          '✨ Woof! There were too many forwardings at the same second to display here.',
+        );
       for (const user of users) {
         // eslint-disable-next-line no-await-in-loop
         await this.sendMessage({

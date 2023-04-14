@@ -30,6 +30,12 @@ export interface ChainInfo {
   warnings?: string
 }
 
+interface NetworkInfo {
+  version: string;
+  subversion: string;
+  warnings?: string;
+}
+
 interface TxInScriptSig {
   asm: string;
   hex: string;
@@ -364,6 +370,20 @@ export async function getBlockchainInfo(): Promise<ChainInfo | undefined> {
   try {
     const response: ChainInfo = await rpc({
       method: 'getblockchaininfo',
+    });
+    return response;
+  } catch (error) {
+    if ((error instanceof BitcoinRpcError) && error.isNotFound()) {
+      return undefined;
+    }
+    throw error;
+  }
+}
+
+export async function getNetworkInfo(): Promise<NetworkInfo | undefined> {
+  try {
+    const response: NetworkInfo = await rpc({
+      method: 'getnetworkinfo',
     });
     return response;
   } catch (error) {

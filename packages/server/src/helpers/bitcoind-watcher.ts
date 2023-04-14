@@ -11,6 +11,7 @@ import {
   ChainInfo, BlockVerbosity2, getBestBlockHash, getBlock, getBlockchainInfo, getBlockTransactions,
   getNotificationAddresses, getRawMempool, getRawTransaction, getRawTransactionsBatch,
   isTransactionInMempool, TxInStandard, BlockTransaction, RawTransaction, getOutAddresses,
+  getNetworkInfo,
 } from './bitcoin-rpc';
 import { TransactionStatus } from '../models/watched-transactions';
 
@@ -123,6 +124,11 @@ function monitorSocket(socketName: string, socket: zeromq.Socket): void {
     socket.on(eventName, monitorListener(socketName, eventName));
   }
   socket.monitor(monitorInterval, 1);
+}
+
+interface BitcoindInfo {
+  chain: Network;
+  version: string;
 }
 
 class BitcoindWatcher extends EventEmitter {
@@ -1094,6 +1100,18 @@ class BitcoindWatcher extends EventEmitter {
       return undefined;
     }
     return this.mempoolWeight < maxBlockWeight;
+  }
+
+  async getInfo(): Promise<BitcoindInfo> {
+    const chain = this.getChain();
+    const networkInfo = await getNetworkInfo();
+    if (!networkInfo) {
+      throw new Error('Failed to get network info');
+    }
+    return {
+      chain,
+      version: networkInfo.subversion,
+    };
   }
 }
 

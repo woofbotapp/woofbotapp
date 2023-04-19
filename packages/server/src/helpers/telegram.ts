@@ -408,7 +408,7 @@ export class TelegrafManager {
             );
             break;
           default:
-            messages.push(`This transaction is only in the mempool.`);
+            messages.push('This transaction is only in the mempool (has zero confirmations).');
         }
         if (multiAddress) {
           messages.push([

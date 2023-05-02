@@ -1,5 +1,5 @@
 import { PermissionKey, permissionGroupNameRegex } from '@woofbot/common';
-import Router from 'express';
+import { Router } from 'express';
 
 import { asyncHandler } from '../../helpers/express';
 import { SettingsModel } from '../../models/settings';

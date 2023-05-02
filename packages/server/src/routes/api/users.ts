@@ -1,4 +1,4 @@
-import Router from 'express';
+import { Router } from 'express';
 import { Types } from 'mongoose';
 import { permissionGroupNameRegex } from '@woofbot/common';
 

@@ -1,7 +1,7 @@
 import {
   scrypt, ScryptOptions, timingSafeEqual, randomBytes, createHash,
 } from 'crypto';
-import Router from 'express';
+import { Router } from 'express';
 
 import { asyncHandler } from '../../../helpers/express';
 import { zeroObjectId } from '../../../helpers/mongo';

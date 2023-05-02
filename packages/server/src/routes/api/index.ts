@@ -1,4 +1,4 @@
-import Router, { json as expressJson } from 'express';
+import { Router, json as expressJson } from 'express';
 import expressWinston from 'express-winston';
 import winston from 'winston';
 

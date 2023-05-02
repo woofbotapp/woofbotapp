@@ -42,9 +42,7 @@ export interface LndNewForwardsEvent {
   lastForwardCount: number;
 }
 
-export interface LndInvoiceUpdatedEvent extends SubscribeToInvoicesInvoiceUpdatedEvent {
-  mtokens?: string; // api may have changed at some point
-}
+export type LndInvoiceUpdatedEvent = SubscribeToInvoicesInvoiceUpdatedEvent;
 
 const delayedCheckTimeoutMs = 1_000;
 const recheckGraceMs = 15_000;

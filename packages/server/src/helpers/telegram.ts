@@ -633,9 +633,6 @@ export class TelegrafManager {
 
   private async onLndInvoiceUpdated(event: LndInvoiceUpdatedEvent) {
     try {
-      if (event.is_outgoing) {
-        return;
-      }
       logger.info(`onLndInvoiceUpdated: ${event.id} ${event.confirmed_at ?? 'unconfirmed'}`);
       const users = await UsersModel.find(
         event.confirmed_at

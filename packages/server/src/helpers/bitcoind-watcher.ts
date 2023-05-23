@@ -156,7 +156,7 @@ class BitcoindWatcher extends EventEmitter {
 
   private checkNewBlock = true;
 
-  private checkMempool = true;
+  private checkRawMempool = true;
 
   // Full check of mempool conflicts and incomes (of watched transactions and addresses) is only
   // relevant after boot. After that, we check each transaction when it arrives on the sequence
@@ -326,7 +326,7 @@ class BitcoindWatcher extends EventEmitter {
           const alreadyAnalyzed = this.analyzedBlockHashes.includes(bestBlockHash);
           logger.info(`run: best-block ${bestBlockHash} already analyzed: ${alreadyAnalyzed}`);
           if (!alreadyAnalyzed) {
-            this.checkMempool = true;
+            this.checkRawMempool = true;
             const analysisComplete = await this.analyzeNewBlocks(bestBlockHash);
             if (!analysisComplete) {
               this.checkNewBlock = true;
@@ -364,15 +364,15 @@ class BitcoindWatcher extends EventEmitter {
           this.checkMempoolConflictsAndIncomes = false;
           this.recheckMempoolTransactions = undefined;
         }
-      } else if (this.checkMempool) {
-        this.checkMempool = false;
+      } else if (this.checkRawMempool) {
+        this.checkRawMempool = false;
         try {
-          logger.info('run: getting raw mempool');
+          logger.info('run: checkRawMempool: getting raw mempool');
           const mempoolTransactions = await getRawMempool();
           if (mempoolTransactions) {
             const mempoolTransactionIds = Object.keys(mempoolTransactions);
             logger.info(
-              `run: mempoolTransactions: ${mempoolTransactionIds.length}`,
+              `run: checkRawMempool: transactions: ${mempoolTransactionIds.length}`,
             );
             if (this.checkMempoolConflictsAndIncomes) {
               // no need to check the transactions otherwise
@@ -382,7 +382,7 @@ class BitcoindWatcher extends EventEmitter {
               (soFar, { weight }) => soFar + weight,
               0,
             );
-            logger.info(`run: new mempool weight: ${newMempoolWeight}`);
+            logger.info(`run: checkRawMempool: new mempool weight: ${newMempoolWeight}`);
             if (this.mempoolWeight !== undefined) {
               const wasClear = this.mempoolWeight < maxBlockWeight;
               const isClear = newMempoolWeight < maxBlockWeight;
@@ -393,9 +393,11 @@ class BitcoindWatcher extends EventEmitter {
               }
             }
             this.mempoolWeight = newMempoolWeight;
+          } else {
+            logger.info('run: undefined mempool transactions');
           }
         } catch (error) {
-          this.checkMempool = true;
+          this.checkRawMempool = true;
           throw error;
         }
       } else {
@@ -919,7 +921,7 @@ class BitcoindWatcher extends EventEmitter {
   private async mempoolRecheck(): Promise<void> {
     try {
       logger.info('mempoolRecheck: started');
-      this.checkMempool = true;
+      this.checkRawMempool = true;
       this.delayedTriggerTimeout?.refresh();
       logger.info('mempoolRecheck: finished');
     } catch (error) {
@@ -1096,13 +1098,13 @@ class BitcoindWatcher extends EventEmitter {
       transactionPayloadsQueue: this.transactionPayloadsQueue?.length ?? 0,
       recheckMempoolTransactions: this.recheckMempoolTransactions?.length ?? 0,
       checkNewBlock: this.checkNewBlock,
-      checkMempool: this.checkMempool,
+      checkRawMempool: this.checkRawMempool,
     })}`);
     return (
       this.newTransactionsToWatch.length + this.transactionsToUnwatch.length
       + this.transactionsToReanalyze.length + (this.transactionPayloadsQueue?.length ?? 0)
       + (this.recheckMempoolTransactions?.length ?? 0) + (this.checkNewBlock ? 1 : 0)
-      + (this.checkMempool ? 1 : 0)
+      + (this.checkRawMempool ? 1 : 0)
     );
   }
 

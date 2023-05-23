@@ -11,7 +11,7 @@ import {
   ChainInfo, BlockVerbosity2, getBestBlockHash, getBlock, getBlockchainInfo, getBlockTransactions,
   getNotificationAddresses, getRawMempool, getRawTransaction, getRawTransactionsBatch,
   isTransactionInMempool, TxInStandard, BlockTransaction, RawTransaction, getOutAddresses,
-  getNetworkInfo,
+  getNetworkInfo, getMempoolInfo,
 } from './bitcoin-rpc';
 import { TransactionStatus } from '../models/watched-transactions';
 
@@ -368,7 +368,7 @@ class BitcoindWatcher extends EventEmitter {
         }
       } else if (this.checkMempoolSize) {
         this.checkMempoolSize = false;
-        this.checkRawMempool = true;
+        await this.runCheckMempoolSize();
       } else if (this.checkRawMempool) {
         this.checkRawMempool = false;
         try {
@@ -399,7 +399,7 @@ class BitcoindWatcher extends EventEmitter {
             }
             this.mempoolWeight = newMempoolWeight;
           } else {
-            logger.info('run: undefined mempool transactions');
+            logger.info('run: checkRawMempool: undefined mempool transactions');
           }
         } catch (error) {
           this.checkRawMempool = true;
@@ -417,6 +417,42 @@ class BitcoindWatcher extends EventEmitter {
     this.isRunning = false;
     if (this.shouldRerun) {
       this.delayedTriggerTimeout?.refresh();
+    }
+  }
+
+  private async runCheckMempoolSize(): Promise<void> {
+    try {
+      logger.info('runCheckMempoolSize: getting mempool info');
+      const mempoolInfo = await getMempoolInfo();
+      if (!mempoolInfo) {
+        logger.info('runCheckMempoolSize: mempool info is undefined');
+        this.checkRawMempool = true;
+        return;
+      }
+      const minWeight = mempoolInfo.bytes * 3;
+      logger.info(`runCheckMempoolSize: new weight is at least ${minWeight}`);
+      if (minWeight < maxBlockWeight) {
+        logger.info('runCheckMempoolSize: not enough info to tell if mempool is clear or not');
+        this.checkRawMempool = true;
+        return;
+      }
+      logger.info('runCheckMempoolSize: the mempool is not clear');
+      if (this.mempoolWeight !== undefined) {
+        const wasClear = this.mempoolWeight < maxBlockWeight;
+        logger.info(`runCheckMempoolSize: wasClear: ${wasClear}`);
+        if (wasClear) {
+          this.safeAsyncEmit(BitcoindWatcherEventName.NewMempoolClearStatus, {
+            isClear: false,
+          });
+        }
+      } else {
+        logger.info('runCheckMempoolSize: last mempoolWeight is undefined');
+      }
+      this.mempoolWeight = minWeight;
+    } catch (error) {
+      // Check raw mempool anyways
+      this.checkRawMempool = true;
+      throw error;
     }
   }
 

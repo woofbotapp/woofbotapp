@@ -70,7 +70,7 @@ const networks = {
 const rawTransactionsBatchSize = 50;
 const maxAnalyzedBlocks = 5;
 const bitcoindWatcherErrorGraceMs = 10_000;
-const mempoolRecheckIntervalMs = 3_600_000;
+const mempoolSizeRecheckIntervalMs = 600_000;
 const bestBlockRecheckIntervalMs = 60_000;
 const delayedTriggerTimeoutMs = 1;
 const newBlockDebounceTimeoutMs = 3_000;
@@ -136,6 +136,8 @@ class BitcoindWatcher extends EventEmitter {
   private delayedTriggerTimeout: ReturnType<typeof setTimeout> | undefined;
 
   private newBlockDebounceTimeout: ReturnType<typeof setTimeout> | undefined;
+
+  private mempoolSizeRecheckInterval: ReturnType<typeof setInterval> | undefined;
 
   private recheckMempoolTransactions: string[] | undefined;
 
@@ -422,6 +424,7 @@ class BitcoindWatcher extends EventEmitter {
 
   private async runCheckMempoolSize(): Promise<void> {
     try {
+      this.mempoolSizeRecheckInterval?.refresh();
       logger.info('runCheckMempoolSize: getting mempool info');
       const mempoolInfo = await getMempoolInfo();
       if (!mempoolInfo) {
@@ -959,14 +962,14 @@ class BitcoindWatcher extends EventEmitter {
     }
   }
 
-  private async mempoolRecheck(): Promise<void> {
+  private async mempoolSizeRecheck(): Promise<void> {
     try {
-      logger.info('mempoolRecheck: started');
-      this.checkRawMempool = true;
+      logger.info('mempoolSizeRecheck: started');
+      this.checkMempoolSize = true;
       this.delayedTriggerTimeout?.refresh();
-      logger.info('mempoolRecheck: finished');
+      logger.info('mempoolSizeRecheck: finished');
     } catch (error) {
-      logger.error(`BitcoindWatcher: Failed to run major recheck ${errorString(error)}`);
+      logger.error(`mempoolSizeRecheck: failed to run ${errorString(error)}`);
     }
   }
 
@@ -1064,11 +1067,11 @@ class BitcoindWatcher extends EventEmitter {
       );
       bestBlockRecheckInterval.unref();
     }
-    const mempoolRecheckInterval = setInterval(
-      () => this.mempoolRecheck(),
-      mempoolRecheckIntervalMs,
+    this.mempoolSizeRecheckInterval = setInterval(
+      () => this.mempoolSizeRecheck(),
+      mempoolSizeRecheckIntervalMs,
     );
-    mempoolRecheckInterval.unref();
+    this.mempoolSizeRecheckInterval.unref();
 
     logger.info('BitcoindWatcher: subscribing to rawtx zmq notifications');
     this.rawTransactionSocket = zeromq.socket('sub');

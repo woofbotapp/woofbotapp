@@ -250,6 +250,9 @@ async function rpc<T>(properties: RpcProperties): Promise<T> {
     if (!response.ok) {
       throw new Error('Bitcoin rpc response not ok');
     }
+    logger.info(`rpc: ${properties.method} that started at ${
+      startTime.toJSON()
+    } finished in ${Date.now() - startTime.getTime()}ms`);
     return responseJson.result;
   } catch (rpcError) {
     logger.error(`rpc: ${properties.method} that started at ${startTime.toJSON()} failed`);
@@ -297,6 +300,9 @@ async function rpcBatch<T>(propertiesArray: RpcProperties[]): Promise<(BitcoinRp
     if (responseJson.some(({ id }, index) => `${rpcId}:${index}` !== id)) {
       throw new Error('Unexpected bitcoin rpc batch response id');
     }
+    logger.info(`rpcBatch: batch that started at ${
+      startTime.toJSON()
+    } finished in ${Date.now() - startTime.getTime()}ms`);
     // ignore status code check - not sure what it should be if some of the responses
     // have errors and some don't.
     return responseJson.map((rpcResponse) => (

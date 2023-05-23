@@ -316,14 +316,16 @@ class BitcoindWatcher extends EventEmitter {
           }
         }
       } else if (this.checkNewBlock) {
-        logger.info('run: new block');
+        logger.info('run: check new block');
         this.checkNewBlock = false;
         try {
           const bestBlockHash = await getBestBlockHash();
           if (!bestBlockHash) {
             throw new Error('Best block hash not found');
           }
-          if (!this.analyzedBlockHashes.includes(bestBlockHash)) {
+          const alreadyAnalyzed = this.analyzedBlockHashes.includes(bestBlockHash);
+          logger.info(`run: best-block ${bestBlockHash} already analyzed: ${alreadyAnalyzed}`);
+          if (!alreadyAnalyzed) {
             this.checkMempool = true;
             const analysisComplete = await this.analyzeNewBlocks(bestBlockHash);
             if (!analysisComplete) {

@@ -158,6 +158,8 @@ class BitcoindWatcher extends EventEmitter {
 
   private checkRawMempool = true;
 
+  private checkMempoolSize = false;
+
   // Full check of mempool conflicts and incomes (of watched transactions and addresses) is only
   // relevant after boot. After that, we check each transaction when it arrives on the sequence
   // socket.
@@ -326,7 +328,7 @@ class BitcoindWatcher extends EventEmitter {
           const alreadyAnalyzed = this.analyzedBlockHashes.includes(bestBlockHash);
           logger.info(`run: best-block ${bestBlockHash} already analyzed: ${alreadyAnalyzed}`);
           if (!alreadyAnalyzed) {
-            this.checkRawMempool = true;
+            this.checkMempoolSize = true;
             const analysisComplete = await this.analyzeNewBlocks(bestBlockHash);
             if (!analysisComplete) {
               this.checkNewBlock = true;
@@ -364,6 +366,9 @@ class BitcoindWatcher extends EventEmitter {
           this.checkMempoolConflictsAndIncomes = false;
           this.recheckMempoolTransactions = undefined;
         }
+      } else if (this.checkMempoolSize) {
+        this.checkMempoolSize = false;
+        this.checkRawMempool = true;
       } else if (this.checkRawMempool) {
         this.checkRawMempool = false;
         try {

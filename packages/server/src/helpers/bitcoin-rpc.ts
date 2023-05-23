@@ -136,6 +136,14 @@ interface RawMempoolTransaction {
   time: number;
 }
 
+interface MempoolInfo {
+  loaded: boolean;
+  size: number;
+  bytes: number;
+  usage: number;
+  // There are more fields
+}
+
 interface BitcoinRpcErrorJson {
   code: number;
   message: string;
@@ -299,6 +307,20 @@ async function rpcBatch<T>(propertiesArray: RpcProperties[]): Promise<(BitcoinRp
     throw rpcError;
   } finally {
     clearTimeout(abortTimeout);
+  }
+}
+
+export async function getMempoolInfo(): Promise<MempoolInfo | undefined> {
+  try {
+    const response: MempoolInfo = await rpc({
+      method: 'getrawtransaction',
+    });
+    return response;
+  } catch (error) {
+    if ((error instanceof BitcoinRpcError) && error.isNotFound()) {
+      return undefined;
+    }
+    throw error;
   }
 }
 

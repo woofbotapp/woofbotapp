@@ -70,7 +70,7 @@ const networks = {
 const rawTransactionsBatchSize = 50;
 const maxAnalyzedBlocks = 5;
 const bitcoindWatcherErrorGraceMs = 10_000;
-const majorRecheckIntervalMs = 60_000;
+const mempoolRecheckIntervalMs = 60_000;
 const bestBlockRecheckIntervalMs = 60_000;
 const delayedTriggerTimeoutMs = 1;
 const newBlockDebounceTimeoutMs = 3_000;
@@ -914,12 +914,12 @@ class BitcoindWatcher extends EventEmitter {
     }
   }
 
-  private async majorRecheck(): Promise<void> {
+  private async mempoolRecheck(): Promise<void> {
     try {
-      logger.info('majorRecheck: started');
+      logger.info('mempoolRecheck: started');
       this.checkMempool = true;
       this.delayedTriggerTimeout?.refresh();
-      logger.info('majorRecheck: finished');
+      logger.info('mempoolRecheck: finished');
     } catch (error) {
       logger.error(`BitcoindWatcher: Failed to run major recheck ${errorString(error)}`);
     }
@@ -1019,8 +1019,11 @@ class BitcoindWatcher extends EventEmitter {
       );
       bestBlockRecheckInterval.unref();
     }
-    const majorRecheckInterval = setInterval(() => this.majorRecheck(), majorRecheckIntervalMs);
-    majorRecheckInterval.unref();
+    const mempoolRecheckInterval = setInterval(
+      () => this.mempoolRecheck(),
+      mempoolRecheckIntervalMs,
+    );
+    mempoolRecheckInterval.unref();
 
     logger.info('BitcoindWatcher: subscribing to rawtx zmq notifications');
     this.rawTransactionSocket = zeromq.socket('sub');

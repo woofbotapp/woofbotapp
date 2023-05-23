@@ -173,9 +173,11 @@ export default function GeneralSettings() {
           </ExternalLink>
         </Typography>
         <Typography component="p">
-          Mempool weight:
+          Mempool weight: &ge;
           {' '}
           {data.mempoolWeight}
+          {' '}
+          wu
         </Typography>
         <Typography component="p">
           Mempool block explorer url (for the /{BotCommandName.Links} command):

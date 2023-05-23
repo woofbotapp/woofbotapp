@@ -71,6 +71,7 @@ const rawTransactionsBatchSize = 50;
 const maxAnalyzedBlocks = 5;
 const bitcoindWatcherErrorGraceMs = 10_000;
 const majorRecheckIntervalMs = 60_000;
+const bestBlockRecheckIntervalMs = 60_000;
 const delayedTriggerTimeoutMs = 1;
 const newBlockDebounceTimeoutMs = 3_000;
 
@@ -178,8 +179,6 @@ class BitcoindWatcher extends EventEmitter {
   private isRunning = false;
 
   private chain: Network | undefined;
-
-  private majorRecheckLastBestBlockHash: string | undefined;
 
   private mempoolWeight: number | undefined;
 
@@ -905,19 +904,19 @@ class BitcoindWatcher extends EventEmitter {
     }
   }
 
+  private async bestBlockRecheck(): Promise<void> {
+    try {
+      logger.info('bestBlockRecheck: started');
+      this.newBlockDebounce();
+      logger.info('bestBlockRecheck: finished');
+    } catch (error) {
+      logger.error(`bestBlockRecheck: Failed ${errorString(error)}`);
+    }
+  }
+
   private async majorRecheck(): Promise<void> {
     try {
       logger.info('majorRecheck: started');
-      if (!this.sequenceNotificationSocket) {
-        const newBestBlockHash = await getBestBlockHash();
-        if (this.majorRecheckLastBestBlockHash !== newBestBlockHash) {
-          if (this.majorRecheckLastBestBlockHash) {
-            logger.info('majorRecheck: New block from major recheck');
-            this.newBlockDebounce();
-          }
-          this.majorRecheckLastBestBlockHash = newBestBlockHash;
-        }
-      }
       this.checkMempool = true;
       this.delayedTriggerTimeout?.refresh();
       logger.info('majorRecheck: finished');
@@ -1012,6 +1011,13 @@ class BitcoindWatcher extends EventEmitter {
         }
       });
       monitorSocket('sequenceNotificationSocket', this.sequenceNotificationSocket);
+    } else {
+      logger.info('BitcoindWatcher: starting best block recheck interval');
+      const bestBlockRecheckInterval = setInterval(
+        () => this.bestBlockRecheck(),
+        bestBlockRecheckIntervalMs,
+      );
+      bestBlockRecheckInterval.unref();
     }
     const majorRecheckInterval = setInterval(() => this.majorRecheck(), majorRecheckIntervalMs);
     majorRecheckInterval.unref();

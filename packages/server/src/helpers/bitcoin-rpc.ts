@@ -203,6 +203,8 @@ interface RpcProperties {
 const abortTimeoutMs = 90_000;
 
 async function rpc<T>(properties: RpcProperties): Promise<T> {
+  const startTime = new Date();
+  logger.info(`rpc: ${properties.method} started at ${startTime.toJSON()}`);
   const abortController = new AbortController();
   const abortTimeout = setTimeout(() => abortController.abort(), abortTimeoutMs);
   try {
@@ -241,12 +243,17 @@ async function rpc<T>(properties: RpcProperties): Promise<T> {
       throw new Error('Bitcoin rpc response not ok');
     }
     return responseJson.result;
+  } catch (rpcError) {
+    logger.error(`rpc: ${properties.method} that started at ${startTime.toJSON()} failed`);
+    throw rpcError;
   } finally {
     clearTimeout(abortTimeout);
   }
 }
 
 async function rpcBatch<T>(propertiesArray: RpcProperties[]): Promise<(BitcoinRpcError | T)[]> {
+  const startTime = new Date();
+  logger.info(`rpcBatch: batch of ${propertiesArray.length} started at ${startTime.toJSON()}`);
   const abortController = new AbortController();
   const abortTimeout = setTimeout(() => abortController.abort(), abortTimeoutMs);
   try {
@@ -287,6 +294,9 @@ async function rpcBatch<T>(propertiesArray: RpcProperties[]): Promise<(BitcoinRp
     return responseJson.map((rpcResponse) => (
       rpcResponse.error ? new BitcoinRpcError(rpcResponse.error) : rpcResponse.result
     ));
+  } catch (rpcError) {
+    logger.error(`rpcBatch: batch that started at ${startTime.toJSON()} failed`);
+    throw rpcError;
   } finally {
     clearTimeout(abortTimeout);
   }

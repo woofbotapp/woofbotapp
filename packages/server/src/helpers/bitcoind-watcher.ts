@@ -225,16 +225,20 @@ class BitcoindWatcher extends EventEmitter {
 
   private newBlockDebounce() {
     if (!this.newBlockDebounceTimeout) {
+      logger.info('newBlockDebounce: defining for the first time');
       this.newBlockDebounceTimeout = setTimeout(() => {
+        logger.info('newBlockDebounce: setting checkNewBlock');
         this.checkNewBlock = true;
         this.delayedTriggerTimeout?.refresh();
       }, newBlockDebounceTimeoutMs);
       return;
     }
+    logger.info('newBlockDebounce: refreshing');
     this.newBlockDebounceTimeout.refresh();
   }
 
   private runSafe() {
+    logger.info(`runSafe: isRunning: ${this.isRunning}`);
     if (this.isRunning) {
       this.shouldRerun = true;
       return;
@@ -404,10 +408,7 @@ class BitcoindWatcher extends EventEmitter {
     }
     this.isRunning = false;
     if (this.shouldRerun) {
-      // Event handlers run immediately when events are emitted.
-      // We want to let the event-loop run other things before we run again.
-      await Promise.resolve();
-      this.emit(BitcoindWatcherEventName.Trigger);
+      this.delayedTriggerTimeout?.refresh();
     }
   }
 
@@ -1036,7 +1037,10 @@ class BitcoindWatcher extends EventEmitter {
     });
     monitorSocket('rawTransactionSocket', this.rawTransactionSocket);
     this.delayedTriggerTimeout = setTimeout(
-      () => this.emit(BitcoindWatcherEventName.Trigger),
+      () => {
+        logger.info('delayedTriggerTimeout: trigger');
+        this.emit(BitcoindWatcherEventName.Trigger);
+      },
       delayedTriggerTimeoutMs,
     );
   }

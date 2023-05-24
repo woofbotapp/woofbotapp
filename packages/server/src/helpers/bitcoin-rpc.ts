@@ -319,7 +319,7 @@ async function rpcBatch<T>(propertiesArray: RpcProperties[]): Promise<(BitcoinRp
 export async function getMempoolInfo(): Promise<MempoolInfo | undefined> {
   try {
     const response: MempoolInfo = await rpc({
-      method: 'getrawtransaction',
+      method: 'getmempoolinfo',
     });
     return response;
   } catch (error) {

@@ -253,6 +253,7 @@ class BitcoindWatcher extends EventEmitter {
 
   private async run() {
     try {
+      logger.info('run: started');
       this.shouldRerun = true;
       if (this.transactionsToUnwatch.length > 0) {
         logger.info('run: New transactions to unwatch');
@@ -417,6 +418,7 @@ class BitcoindWatcher extends EventEmitter {
       });
     }
     this.isRunning = false;
+    logger.info(`run: finished - shouldRerun: ${this.shouldRerun}`);
     if (this.shouldRerun) {
       this.delayedTriggerTimeout?.refresh();
     }

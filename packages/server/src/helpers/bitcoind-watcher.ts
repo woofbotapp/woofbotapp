@@ -1145,12 +1145,13 @@ class BitcoindWatcher extends EventEmitter {
       recheckMempoolTransactions: this.recheckMempoolTransactions?.length ?? 0,
       checkNewBlock: this.checkNewBlock,
       checkRawMempool: this.checkRawMempool,
+      checkMempoolSize: this.checkMempoolSize,
     })}`);
     return (
       this.newTransactionsToWatch.length + this.transactionsToUnwatch.length
       + this.transactionsToReanalyze.length + (this.transactionPayloadsQueue?.length ?? 0)
       + (this.recheckMempoolTransactions?.length ?? 0) + (this.checkNewBlock ? 1 : 0)
-      + (this.checkRawMempool ? 1 : 0)
+      + (this.checkRawMempool ? 1 : 0) + (this.checkMempoolSize ? 1 : 0)
     );
   }
 

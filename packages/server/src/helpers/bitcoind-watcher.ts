@@ -67,7 +67,7 @@ const networks = {
   [Network.regtest]: bitcoinjsNetworks.regtest,
 };
 
-const rawTransactionsBatchSize = 50;
+const rawTransactionsBatchSize = 100;
 const maxAnalyzedBlocks = 5;
 const bitcoindWatcherErrorGraceMs = 10_000;
 const mempoolSizeRecheckIntervalMs = 600_000;

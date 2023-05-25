@@ -61,6 +61,11 @@ export interface NewMempoolClearStatusEvent {
   isClear: boolean;
 }
 
+interface AnalyzeBlockSpendingAddressesTask {
+  transactions: [RawTransaction, BlockVerbosity2][];
+  fullConfirmation: boolean;
+}
+
 const networks = {
   [Network.mainnet]: bitcoinjsNetworks.bitcoin,
   [Network.testnet]: bitcoinjsNetworks.testnet,
@@ -74,6 +79,8 @@ const mempoolSizeRecheckIntervalMs = 600_000;
 const bestBlockRecheckIntervalMs = 60_000;
 const delayedTriggerTimeoutMs = 1;
 const newBlockDebounceTimeoutMs = 3_000;
+const analyzeBlockSpendingAddressesMaxTasks = 100;
+const handleAnalyzeBlockSpendingAddressesTaskGraceMs = 10;
 
 const startAttempts = 6;
 const startGraceMs = 20_000;
@@ -138,6 +145,8 @@ class BitcoindWatcher extends EventEmitter {
   private newBlockDebounceTimeout: ReturnType<typeof setTimeout> | undefined;
 
   private mempoolSizeRecheckInterval: ReturnType<typeof setInterval> | undefined;
+
+  private analyzeBlockSpendingAddressesTasks: AnalyzeBlockSpendingAddressesTask[] = [];
 
   // Full check of mempool conflicts and incomes (of watched transactions and addresses) is only
   // relevant after boot. After that, we check each transaction when it arrives on the sequence
@@ -769,7 +778,10 @@ class BitcoindWatcher extends EventEmitter {
     );
     logger.info(`analyzeNewBlocks: ${this.watchedAddresses.size} watched addresses`);
     if (this.watchedAddresses.size > 0) {
-      await this.analyzeBlockSpendingAddresses(transactions, false);
+      this.pushAnalyzeBlockSpendingAddressesTask({
+        transactions,
+        fullConfirmation: false,
+      });
     }
     logger.info(`analyzeNewBlocks: updating transaction analyses with ${
       transactions.length
@@ -835,7 +847,10 @@ class BitcoindWatcher extends EventEmitter {
     if (this.watchedAddresses.size > 0) {
       logger.info('analyzeNewBlocks: analyzing confirmed transactions for watched addresses');
       const confirmedTransactions = await getBlockTransactions(confirmedBlockHashes);
-      await this.analyzeBlockSpendingAddresses(confirmedTransactions, true);
+      this.pushAnalyzeBlockSpendingAddressesTask({
+        transactions: confirmedTransactions,
+        fullConfirmation: true,
+      });
       for (const [transaction, block] of confirmedTransactions) {
         this.reportIncomes(transaction, block.confirmations);
         for (const [, alreadyDiscoveredTransactions] of this.watchedAddresses) {
@@ -877,15 +892,36 @@ class BitcoindWatcher extends EventEmitter {
     return true; // analysis complete
   }
 
-  private async analyzeBlockSpendingAddresses(
-    transactions: [RawTransaction, BlockVerbosity2][],
-    fullConfirmation: boolean,
+  private pushAnalyzeBlockSpendingAddressesTask(
+    task: AnalyzeBlockSpendingAddressesTask,
   ) {
+    logger.info('pushAnalyzeBlockSpendingAddressesTask: called');
+    if (this.analyzeBlockSpendingAddressesTasks.length >= analyzeBlockSpendingAddressesMaxTasks) {
+      logger.warn('pushAnalyzeBlockSpendingAddressesTask: too many tasks');
+      return;
+    }
+    this.analyzeBlockSpendingAddressesTasks.push(task);
+    if (this.analyzeBlockSpendingAddressesTasks.length === 1) {
+      logger.info(
+        'pushAnalyzeBlockSpendingAddressesTask: queue was empty - starting parallel handling',
+      );
+      // async call without await
+      this.handleAnalyzeBlockSpendingAddressesTask();
+    }
+    logger.info('pushAnalyzeBlockSpendingAddressesTask: finished');
+  }
+
+  private async handleAnalyzeBlockSpendingAddressesTask() {
     try {
+      logger.info('handleAnalyzeBlockSpendingAddressesTask: looking at the queue head');
+      const [{ transactions, fullConfirmation }] = this.analyzeBlockSpendingAddressesTasks;
+      logger.info(`handleAnalyzeBlockSpendingAddressesTask: transactions: ${
+        transactions.length
+      } fullConfirmation: ${fullConfirmation}`);
       const inputTransactionIds = [...new Set(transactions.flatMap(
         ([transaction]) => transaction.vin.map((txIn) => txIn.txid).filter(Boolean),
       ) as string[])];
-      logger.info(`analyzeBlockSpendingAddresses: Getting ${
+      logger.info(`handleAnalyzeBlockSpendingAddressesTask: Getting ${
         inputTransactionIds.length
       } input transactions`);
       const inputTransactions: Map<string, RawTransaction> = new Map();
@@ -947,8 +983,21 @@ class BitcoindWatcher extends EventEmitter {
         }
       }
     } catch (error) {
-      logger.error(`analyzeBlockSpendingAddresses: failed: ${errorString(error)}`);
+      logger.error(`handleAnalyzeBlockSpendingAddressesTask: failed: ${errorString(error)}`);
     }
+    this.analyzeBlockSpendingAddressesTasks.shift();
+    if (this.analyzeBlockSpendingAddressesTasks.length === 0) {
+      logger.info('handleAnalyzeBlockSpendingAddressesTask: no more tasks');
+      // Next push will call handleAnalyzeBlockSpendingAddressesTask
+      return;
+    }
+    // Safety await to prevent stack overflow. Not sure if needed.
+    await new Promise((resolve) => {
+      setTimeout(resolve, handleAnalyzeBlockSpendingAddressesTaskGraceMs);
+    });
+    logger.info('handleAnalyzeBlockSpendingAddressesTask: there is another task to handle');
+    // async call without await
+    this.handleAnalyzeBlockSpendingAddressesTask();
   }
 
   private async bestBlockRecheck(): Promise<void> {
@@ -1144,6 +1193,7 @@ class BitcoindWatcher extends EventEmitter {
       checkNewBlock: this.checkNewBlock,
       checkRawMempool: this.checkRawMempool,
       checkMempoolSize: this.checkMempoolSize,
+      analyzeBlockSpendingAddressesTasks: this.analyzeBlockSpendingAddressesTasks.length,
     })}`);
     return (
       this.newTransactionsToWatch.length + this.transactionsToUnwatch.length
@@ -1151,6 +1201,7 @@ class BitcoindWatcher extends EventEmitter {
       + (Array.isArray(this.initialMempoolCheckState) ? this.initialMempoolCheckState.length : 0)
       + ((this.initialMempoolCheckState === true) ? 1 : 0) + (this.checkNewBlock ? 1 : 0)
       + (this.checkRawMempool ? 1 : 0) + (this.checkMempoolSize ? 1 : 0)
+      + this.analyzeBlockSpendingAddressesTasks.length
     );
   }
 

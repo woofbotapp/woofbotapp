@@ -881,69 +881,73 @@ class BitcoindWatcher extends EventEmitter {
     transactions: [RawTransaction, BlockVerbosity2][],
     fullConfirmation: boolean,
   ) {
-    const inputTransactionIds = [...new Set(transactions.flatMap(
-      ([transaction]) => transaction.vin.map((txIn) => txIn.txid).filter(Boolean),
-    ) as string[])];
-    logger.info(`analyzeBlockSpendingAddresses: Getting ${
-      inputTransactionIds.length
-    } input transactions`);
-    const inputTransactions: Map<string, RawTransaction> = new Map();
-    while (inputTransactionIds.length > 0) {
-      // eslint-disable-next-line no-await-in-loop
-      const someInputTransactions = await getRawTransactionsBatch(
-        inputTransactionIds.splice(0, rawTransactionsBatchSize),
-      );
-      for (const someInputTransaction of someInputTransactions) {
-        if (someInputTransaction.vout.some(
-          (txOut) => getOutAddresses(txOut).some(
-            (ad) => this.watchedAddresses.has(ad),
-          ),
-        )) {
-          inputTransactions.set(someInputTransaction.txid, someInputTransaction);
-        }
-      }
-    }
-    for (const [transaction, block] of transactions) {
-      const spendingByAddresses: Map<string, number> = new Map();
-      for (const txIn of transaction.vin) {
-        if (!txIn.txid) {
-          continue;
-        }
-        const inputTransaction = inputTransactions.get(txIn.txid);
-        if (!inputTransaction) {
-          continue;
-        }
-        const txOut = inputTransaction.vout[txIn.vout];
-        if (!txOut) {
-          continue;
-        }
-        for (const spendingAddress of getOutAddresses(txOut)) {
-          if (this.watchedAddresses.has(spendingAddress)) {
-            spendingByAddresses.set(
-              spendingAddress,
-              (spendingByAddresses.get(spendingAddress) ?? 0)
-              + Math.round(txOut.value * satsPerBitcoin),
-            );
+    try {
+      const inputTransactionIds = [...new Set(transactions.flatMap(
+        ([transaction]) => transaction.vin.map((txIn) => txIn.txid).filter(Boolean),
+      ) as string[])];
+      logger.info(`analyzeBlockSpendingAddresses: Getting ${
+        inputTransactionIds.length
+      } input transactions`);
+      const inputTransactions: Map<string, RawTransaction> = new Map();
+      while (inputTransactionIds.length > 0) {
+        // eslint-disable-next-line no-await-in-loop
+        const someInputTransactions = await getRawTransactionsBatch(
+          inputTransactionIds.splice(0, rawTransactionsBatchSize),
+        );
+        for (const someInputTransaction of someInputTransactions) {
+          if (someInputTransaction.vout.some(
+            (txOut) => getOutAddresses(txOut).some(
+              (ad) => this.watchedAddresses.has(ad),
+            ),
+          )) {
+            inputTransactions.set(someInputTransaction.txid, someInputTransaction);
           }
         }
       }
-      for (const [address, outcomeSats] of spendingByAddresses) {
-        this.safeAsyncEmit(
-          BitcoindWatcherEventName.NewAddressPayment,
-          {
-            address,
-            txid: transaction.txid,
-            status: (
-              fullConfirmation
-                ? TransactionStatus.FullConfirmation
-                : TransactionStatus.PartialConfirmation
-            ),
-            confirmations: block.confirmations,
-            multiAddress: false, // relevant only for incoming transactions
-            outcomeSats,
-          },
-        );
+      for (const [transaction, block] of transactions) {
+        const spendingByAddresses: Map<string, number> = new Map();
+        for (const txIn of transaction.vin) {
+          if (!txIn.txid) {
+            continue;
+          }
+          const inputTransaction = inputTransactions.get(txIn.txid);
+          if (!inputTransaction) {
+            continue;
+          }
+          const txOut = inputTransaction.vout[txIn.vout];
+          if (!txOut) {
+            continue;
+          }
+          for (const spendingAddress of getOutAddresses(txOut)) {
+            if (this.watchedAddresses.has(spendingAddress)) {
+              spendingByAddresses.set(
+                spendingAddress,
+                (spendingByAddresses.get(spendingAddress) ?? 0)
+                + Math.round(txOut.value * satsPerBitcoin),
+              );
+            }
+          }
+        }
+        for (const [address, outcomeSats] of spendingByAddresses) {
+          this.safeAsyncEmit(
+            BitcoindWatcherEventName.NewAddressPayment,
+            {
+              address,
+              txid: transaction.txid,
+              status: (
+                fullConfirmation
+                  ? TransactionStatus.FullConfirmation
+                  : TransactionStatus.PartialConfirmation
+              ),
+              confirmations: block.confirmations,
+              multiAddress: false, // relevant only for incoming transactions
+              outcomeSats,
+            },
+          );
+        }
       }
+    } catch (error) {
+      logger.error(`analyzeBlockSpendingAddresses: failed: ${errorString(error)}`);
     }
   }
 

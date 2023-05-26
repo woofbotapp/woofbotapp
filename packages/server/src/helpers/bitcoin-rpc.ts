@@ -46,6 +46,14 @@ interface TxInCoinbase {
   sequence: number;
   txid: undefined;
   vout: undefined;
+  prevout: undefined;
+}
+
+interface Prevout {
+  generated: boolean;
+  height: number;
+  value: number;
+  scriptPubKey: TxOutScriptPubKey;
 }
 
 export interface TxInStandard {
@@ -54,6 +62,7 @@ export interface TxInStandard {
   scriptSig: TxInScriptSig;
   txinwitness?: string[];
   sequence: number;
+  prevout?: Prevout;
 }
 
 type TxIn = TxInCoinbase | TxInStandard;
@@ -460,13 +469,16 @@ export async function getZmqNotifications(): Promise<ZmqNotification[] | undefin
   }
 }
 
-export async function getBlock(blockhash: string): Promise<BlockVerbosity2 | undefined> {
+export async function getBlock(
+  blockhash: string,
+  withPrevout = false,
+): Promise<BlockVerbosity2 | undefined> {
   try {
     const response: BlockVerbosity2 = await rpc({
       method: 'getblock',
       params: {
         blockhash,
-        verbosity: 2,
+        verbosity: withPrevout ? 3 : 2,
       },
     });
     return response;
@@ -480,6 +492,7 @@ export async function getBlock(blockhash: string): Promise<BlockVerbosity2 | und
 
 export async function getBlockTransactions(
   blockHashes: string[],
+  withPrevout = false,
 ): Promise<[BlockTransaction, BlockVerbosity2][]> {
   if (blockHashes.length === 0) {
     return [];
@@ -489,7 +502,7 @@ export async function getBlockTransactions(
       method: 'getblock',
       params: {
         blockhash,
-        verbosity: 2,
+        verbosity: withPrevout ? 3 : 2,
       },
     })),
   );

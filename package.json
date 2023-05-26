@@ -1,6 +1,6 @@
 {
   "name": "woofbot",
-  "version": "0.9.3",
+  "version": "0.9.5",
   "main": "index.js",
   "license": "SEE LICENSE IN ./LICENSE",
   "private": true,

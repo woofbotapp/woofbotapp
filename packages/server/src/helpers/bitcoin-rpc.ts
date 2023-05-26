@@ -81,17 +81,17 @@ interface TxOut {
   scriptPubKey: TxOutScriptPubKey;
 }
 
-export function getOutAddresses(txOut: TxOut): string[] {
-  if (!txOut.scriptPubKey.addresses) {
+export function getOutAddresses(scriptPubKey: TxOutScriptPubKey): string[] {
+  if (!scriptPubKey.addresses) {
     // modern api
-    return txOut.scriptPubKey.address ? [txOut.scriptPubKey.address] : [];
+    return scriptPubKey.address ? [scriptPubKey.address] : [];
   }
-  const { address } = txOut.scriptPubKey;
-  if (!address || txOut.scriptPubKey.addresses.includes(address)) {
-    return txOut.scriptPubKey.addresses;
+  const { address } = scriptPubKey;
+  if (!address || scriptPubKey.addresses.includes(address)) {
+    return scriptPubKey.addresses;
   }
   return [
-    ...txOut.scriptPubKey.addresses,
+    ...scriptPubKey.addresses,
     address,
   ];
 }

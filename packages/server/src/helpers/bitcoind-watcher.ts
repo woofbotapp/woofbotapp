@@ -664,7 +664,7 @@ class BitcoindWatcher extends EventEmitter {
   private reportIncomes(transaction: BlockTransaction, confirmations: number) {
     const matchingAddresses: Set<string> = new Set();
     for (const txOut of transaction.vout) {
-      for (const txOutAddress of getOutAddresses(txOut)) {
+      for (const txOutAddress of getOutAddresses(txOut.scriptPubKey)) {
         if (this.watchedAddresses.has(txOutAddress)) {
           matchingAddresses.add(txOutAddress);
         }
@@ -696,10 +696,10 @@ class BitcoindWatcher extends EventEmitter {
     }
     const newTransactionStatus = confirmationsToTransactionStatus(confirmations);
     const txOuts = rawTransaction.vout.filter(
-      (txOut) => getOutAddresses(txOut).includes(watchedAddress),
+      (txOut) => getOutAddresses(txOut.scriptPubKey).includes(watchedAddress),
     );
     const multiAddress = txOuts.some(
-      (txOut) => (getOutAddresses(txOut).length > 1),
+      (txOut) => (getOutAddresses(txOut.scriptPubKey).length > 1),
     );
     const incomeSats = txOuts.reduce(
       (partialSum, txOut) => partialSum + Math.round(txOut.value * satsPerBitcoin),
@@ -934,7 +934,7 @@ class BitcoindWatcher extends EventEmitter {
         );
         for (const someInputTransaction of someInputTransactions) {
           if (someInputTransaction.vout.some(
-            (txOut) => getOutAddresses(txOut).some(
+            (txOut) => getOutAddresses(txOut.scriptPubKey).some(
               (ad) => watchedAddresses.has(ad),
             ),
           )) {
@@ -957,7 +957,7 @@ class BitcoindWatcher extends EventEmitter {
           if (!txOut) {
             continue;
           }
-          for (const spendingAddress of getOutAddresses(txOut)) {
+          for (const spendingAddress of getOutAddresses(txOut.scriptPubKey)) {
             if (watchedAddresses.has(spendingAddress)) {
               spendingByAddresses.set(
                 spendingAddress,

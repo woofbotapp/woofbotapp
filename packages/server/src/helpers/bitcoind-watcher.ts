@@ -924,6 +924,7 @@ class BitcoindWatcher extends EventEmitter {
       logger.info(`handleAnalyzeBlockSpendingAddressesTask: Getting ${
         inputTransactionIds.length
       } input transactions`);
+      const watchedAddresses = new Set(this.watchedAddresses.keys());
       const inputTransactions: Map<string, RawTransaction> = new Map();
       while (inputTransactionIds.length > 0) {
         // eslint-disable-next-line no-await-in-loop
@@ -933,7 +934,7 @@ class BitcoindWatcher extends EventEmitter {
         for (const someInputTransaction of someInputTransactions) {
           if (someInputTransaction.vout.some(
             (txOut) => getOutAddresses(txOut).some(
-              (ad) => this.watchedAddresses.has(ad),
+              (ad) => watchedAddresses.has(ad),
             ),
           )) {
             inputTransactions.set(someInputTransaction.txid, someInputTransaction);
@@ -955,7 +956,7 @@ class BitcoindWatcher extends EventEmitter {
             continue;
           }
           for (const spendingAddress of getOutAddresses(txOut)) {
-            if (this.watchedAddresses.has(spendingAddress)) {
+            if (watchedAddresses.has(spendingAddress)) {
               spendingByAddresses.set(
                 spendingAddress,
                 (spendingByAddresses.get(spendingAddress) ?? 0)

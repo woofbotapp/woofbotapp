@@ -57,6 +57,7 @@ interface Prevout {
 }
 
 export interface TxInStandard {
+  coinbase: undefined;
   txid: string;
   vout: number;
   scriptSig: TxInScriptSig;

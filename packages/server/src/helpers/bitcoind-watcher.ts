@@ -913,17 +913,17 @@ class BitcoindWatcher extends EventEmitter {
 
   private async handleAnalyzeBlockSpendingAddressesTask() {
     try {
-      logger.info('handleAnalyzeBlockSpendingAddressesTask: looking at the queue head');
+      logger.info('hABSAT: looking at the queue head');
       const [{ transactions, fullConfirmation }] = this.analyzeBlockSpendingAddressesTasks;
-      logger.info(`handleAnalyzeBlockSpendingAddressesTask: transactions: ${
+      logger.info(`hABSAT: transactions: ${
         transactions.length
       } fullConfirmation: ${fullConfirmation}`);
       const inputTransactionIds = [...new Set(transactions.flatMap(
         ([transaction]) => transaction.vin.map((txIn) => txIn.txid).filter(Boolean),
       ) as string[])];
-      logger.info(`handleAnalyzeBlockSpendingAddressesTask: Getting ${
+      logger.info(`hABSAT: Getting ${
         inputTransactionIds.length
-      } input transactions`);
+      } input transactions, and checking if they spend to any of the watched addresses.`);
       const watchedAddresses = new Set(this.watchedAddresses.keys());
       const inputTransactions: Map<string, RawTransaction> = new Map();
       while (inputTransactionIds.length > 0) {
@@ -941,6 +941,7 @@ class BitcoindWatcher extends EventEmitter {
           }
         }
       }
+      logger.info('hABSAT: for each transaction, calculating spending from each watched address.');
       for (const [transaction, block] of transactions) {
         const spendingByAddresses: Map<string, number> = new Map();
         for (const txIn of transaction.vin) {
@@ -984,11 +985,11 @@ class BitcoindWatcher extends EventEmitter {
         }
       }
     } catch (error) {
-      logger.error(`handleAnalyzeBlockSpendingAddressesTask: failed: ${errorString(error)}`);
+      logger.error(`hABSAT: failed: ${errorString(error)}`);
     }
     this.analyzeBlockSpendingAddressesTasks.shift();
     if (this.analyzeBlockSpendingAddressesTasks.length === 0) {
-      logger.info('handleAnalyzeBlockSpendingAddressesTask: no more tasks');
+      logger.info('hABSAT: no more tasks');
       // Next push will call handleAnalyzeBlockSpendingAddressesTask
       return;
     }
@@ -996,7 +997,7 @@ class BitcoindWatcher extends EventEmitter {
     await new Promise((resolve) => {
       setTimeout(resolve, handleAnalyzeBlockSpendingAddressesTaskGraceMs);
     });
-    logger.info('handleAnalyzeBlockSpendingAddressesTask: there is another task to handle');
+    logger.info('hABSAT: there is another task to handle');
     // async call without await
     this.handleAnalyzeBlockSpendingAddressesTask();
   }

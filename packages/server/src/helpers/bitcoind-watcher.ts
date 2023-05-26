@@ -61,11 +61,6 @@ export interface NewMempoolClearStatusEvent {
   isClear: boolean;
 }
 
-interface AnalyzeBlockSpendingAddressesTask {
-  transactions: [RawTransaction, BlockVerbosity2][];
-  fullConfirmation: boolean;
-}
-
 const networks = {
   [Network.mainnet]: bitcoinjsNetworks.bitcoin,
   [Network.testnet]: bitcoinjsNetworks.testnet,
@@ -79,8 +74,6 @@ const mempoolSizeRecheckIntervalMs = 600_000;
 const bestBlockRecheckIntervalMs = 60_000;
 const delayedTriggerTimeoutMs = 1;
 const newBlockDebounceTimeoutMs = 3_000;
-const analyzeBlockSpendingAddressesMaxTasks = 100;
-const handleAnalyzeBlockSpendingAddressesTaskGraceMs = 10;
 
 const startAttempts = 6;
 const startGraceMs = 20_000;
@@ -145,8 +138,6 @@ class BitcoindWatcher extends EventEmitter {
   private newBlockDebounceTimeout: ReturnType<typeof setTimeout> | undefined;
 
   private mempoolSizeRecheckInterval: ReturnType<typeof setInterval> | undefined;
-
-  private analyzeBlockSpendingAddressesTasks: AnalyzeBlockSpendingAddressesTask[] = [];
 
   // Full check of mempool conflicts and incomes (of watched transactions and addresses) is only
   // relevant after boot. After that, we check each transaction when it arrives on the sequence
@@ -779,10 +770,7 @@ class BitcoindWatcher extends EventEmitter {
     );
     logger.info(`analyzeNewBlocks: ${this.watchedAddresses.size} watched addresses`);
     if (hasWatchedAddresses) {
-      this.pushAnalyzeBlockSpendingAddressesTask({
-        transactions,
-        fullConfirmation: false,
-      });
+      this.analyzeBlockSpendingAddressesTask(transactions, false);
     }
     logger.info(`analyzeNewBlocks: updating transaction analyses with ${
       transactions.length
@@ -848,10 +836,7 @@ class BitcoindWatcher extends EventEmitter {
     if (this.watchedAddresses.size > 0) {
       logger.info('analyzeNewBlocks: analyzing confirmed transactions for watched addresses');
       const confirmedTransactions = await getBlockTransactions(confirmedBlockHashes, true);
-      this.pushAnalyzeBlockSpendingAddressesTask({
-        transactions: confirmedTransactions,
-        fullConfirmation: true,
-      });
+      this.analyzeBlockSpendingAddressesTask(confirmedTransactions, true);
       for (const [transaction, block] of confirmedTransactions) {
         this.reportIncomes(transaction, block.confirmations);
         for (const [, alreadyDiscoveredTransactions] of this.watchedAddresses) {
@@ -893,82 +878,58 @@ class BitcoindWatcher extends EventEmitter {
     return true; // analysis complete
   }
 
-  private pushAnalyzeBlockSpendingAddressesTask(
-    task: AnalyzeBlockSpendingAddressesTask,
+  private analyzeBlockSpendingAddressesTask(
+    transactions: [RawTransaction, BlockVerbosity2][],
+    fullConfirmation: boolean,
   ) {
-    logger.info('pushAnalyzeBlockSpendingAddressesTask: called');
-    if (this.analyzeBlockSpendingAddressesTasks.length >= analyzeBlockSpendingAddressesMaxTasks) {
-      logger.warn('pushAnalyzeBlockSpendingAddressesTask: too many tasks');
-      return;
-    }
-    this.analyzeBlockSpendingAddressesTasks.push(task);
-    if (this.analyzeBlockSpendingAddressesTasks.length === 1) {
-      logger.info(
-        'pushAnalyzeBlockSpendingAddressesTask: queue was empty - starting parallel handling',
-      );
-      // async call without await
-      this.handleAnalyzeBlockSpendingAddressesTask();
-    }
-    logger.info('pushAnalyzeBlockSpendingAddressesTask: finished');
-  }
-
-  private async handleAnalyzeBlockSpendingAddressesTask() {
-    try {
-      logger.info('hABSAT: looking at the queue head');
-      const [{ transactions, fullConfirmation }] = this.analyzeBlockSpendingAddressesTasks;
-      logger.info(`hABSAT: transactions: ${
-        transactions.length
-      } fullConfirmation: ${fullConfirmation}`);
-      for (const [transaction, block] of transactions) {
-        const spendingByAddresses: Map<string, number> = new Map();
-        for (const txIn of transaction.vin) {
-          if (!txIn.prevout) {
-            continue;
+    logger.info(`aBSAT: transactions: ${
+      transactions.length
+    } fullConfirmation: ${fullConfirmation}`);
+    let foundNonCoinbaseWithoutPrevout = false;
+    for (const [transaction, block] of transactions) {
+      const spendingByAddresses: Map<string, number> = new Map();
+      for (const txIn of transaction.vin) {
+        if (!txIn.prevout) {
+          if (!foundNonCoinbaseWithoutPrevout && !txIn.coinbase) {
+            // don't flood with this error line if there are many alike
+            foundNonCoinbaseWithoutPrevout = true;
+            logger.error(
+              `aBSAT: was called with a non-coinbase transaction that does not have a prevout ${
+                JSON.stringify(transaction)
+              }`,
+            );
           }
-          for (const spendingAddress of getOutAddresses(txIn.prevout.scriptPubKey)) {
-            if (this.watchedAddresses.has(spendingAddress)) {
-              spendingByAddresses.set(
-                spendingAddress,
-                (spendingByAddresses.get(spendingAddress) ?? 0)
-                + Math.round(txIn.prevout.value * satsPerBitcoin),
-              );
-            }
-          }
+          continue;
         }
-        for (const [address, outcomeSats] of spendingByAddresses) {
-          this.safeAsyncEmit(
-            BitcoindWatcherEventName.NewAddressPayment,
-            {
-              address,
-              txid: transaction.txid,
-              status: (
-                fullConfirmation
-                  ? TransactionStatus.FullConfirmation
-                  : TransactionStatus.PartialConfirmation
-              ),
-              confirmations: block.confirmations,
-              multiAddress: false, // relevant only for incoming transactions
-              outcomeSats,
-            },
-          );
+        for (const spendingAddress of getOutAddresses(txIn.prevout.scriptPubKey)) {
+          if (this.watchedAddresses.has(spendingAddress)) {
+            spendingByAddresses.set(
+              spendingAddress,
+              (spendingByAddresses.get(spendingAddress) ?? 0)
+              + Math.round(txIn.prevout.value * satsPerBitcoin),
+            );
+          }
         }
       }
-    } catch (error) {
-      logger.error(`hABSAT: failed: ${errorString(error)}`);
+      for (const [address, outcomeSats] of spendingByAddresses) {
+        this.safeAsyncEmit(
+          BitcoindWatcherEventName.NewAddressPayment,
+          {
+            address,
+            txid: transaction.txid,
+            status: (
+              fullConfirmation
+                ? TransactionStatus.FullConfirmation
+                : TransactionStatus.PartialConfirmation
+            ),
+            confirmations: block.confirmations,
+            multiAddress: false, // relevant only for incoming transactions
+            outcomeSats,
+          },
+        );
+      }
     }
-    this.analyzeBlockSpendingAddressesTasks.shift();
-    if (this.analyzeBlockSpendingAddressesTasks.length === 0) {
-      logger.info('hABSAT: no more tasks');
-      // Next push will call handleAnalyzeBlockSpendingAddressesTask
-      return;
-    }
-    // Safety await to prevent stack overflow. Not sure if needed.
-    await new Promise((resolve) => {
-      setTimeout(resolve, handleAnalyzeBlockSpendingAddressesTaskGraceMs);
-    });
-    logger.info('hABSAT: there is another task to handle');
-    // async call without await
-    this.handleAnalyzeBlockSpendingAddressesTask();
+    logger.info('aBSAT: finished');
   }
 
   private async bestBlockRecheck(): Promise<void> {
@@ -1164,7 +1125,6 @@ class BitcoindWatcher extends EventEmitter {
       checkNewBlock: this.checkNewBlock,
       checkRawMempool: this.checkRawMempool,
       checkMempoolSize: this.checkMempoolSize,
-      analyzeBlockSpendingAddressesTasks: this.analyzeBlockSpendingAddressesTasks.length,
     })}`);
     return (
       this.newTransactionsToWatch.length + this.transactionsToUnwatch.length
@@ -1172,7 +1132,6 @@ class BitcoindWatcher extends EventEmitter {
       + (Array.isArray(this.initialMempoolCheckState) ? this.initialMempoolCheckState.length : 0)
       + ((this.initialMempoolCheckState === true) ? 1 : 0) + (this.checkNewBlock ? 1 : 0)
       + (this.checkRawMempool ? 1 : 0) + (this.checkMempoolSize ? 1 : 0)
-      + this.analyzeBlockSpendingAddressesTasks.length
     );
   }
 

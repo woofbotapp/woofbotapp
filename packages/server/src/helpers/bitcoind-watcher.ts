@@ -919,50 +919,18 @@ class BitcoindWatcher extends EventEmitter {
       logger.info(`hABSAT: transactions: ${
         transactions.length
       } fullConfirmation: ${fullConfirmation}`);
-      const inputTransactionIds = [...new Set(transactions.flatMap(
-        ([transaction]) => transaction.vin.map((txIn) => txIn.txid).filter(Boolean),
-      ) as string[])];
-      logger.info(`hABSAT: Getting ${
-        inputTransactionIds.length
-      } input transactions, and checking if they spend to any of the watched addresses.`);
-      const watchedAddresses = new Set(this.watchedAddresses.keys());
-      const inputTransactions: Map<string, RawTransaction> = new Map();
-      while (inputTransactionIds.length > 0) {
-        // eslint-disable-next-line no-await-in-loop
-        const someInputTransactions = await getRawTransactionsBatch(
-          inputTransactionIds.splice(0, rawTransactionsBatchSize),
-        );
-        for (const someInputTransaction of someInputTransactions) {
-          if (someInputTransaction.vout.some(
-            (txOut) => getOutAddresses(txOut.scriptPubKey).some(
-              (ad) => watchedAddresses.has(ad),
-            ),
-          )) {
-            inputTransactions.set(someInputTransaction.txid, someInputTransaction);
-          }
-        }
-      }
-      logger.info('hABSAT: for each transaction, calculating spending from each watched address.');
       for (const [transaction, block] of transactions) {
         const spendingByAddresses: Map<string, number> = new Map();
         for (const txIn of transaction.vin) {
-          if (!txIn.txid) {
+          if (!txIn.prevout) {
             continue;
           }
-          const inputTransaction = inputTransactions.get(txIn.txid);
-          if (!inputTransaction) {
-            continue;
-          }
-          const txOut = inputTransaction.vout[txIn.vout];
-          if (!txOut) {
-            continue;
-          }
-          for (const spendingAddress of getOutAddresses(txOut.scriptPubKey)) {
-            if (watchedAddresses.has(spendingAddress)) {
+          for (const spendingAddress of getOutAddresses(txIn.prevout.scriptPubKey)) {
+            if (this.watchedAddresses.has(spendingAddress)) {
               spendingByAddresses.set(
                 spendingAddress,
                 (spendingByAddresses.get(spendingAddress) ?? 0)
-                + Math.round(txOut.value * satsPerBitcoin),
+                + Math.round(txIn.prevout.value * satsPerBitcoin),
               );
             }
           }

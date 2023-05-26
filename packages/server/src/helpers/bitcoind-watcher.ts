@@ -727,12 +727,13 @@ class BitcoindWatcher extends EventEmitter {
 
   private async analyzeNewBlocks(bestBlockHash: string): Promise<boolean> {
     logger.info(`analyzeNewBlocks: ${bestBlockHash}`);
+    const hasWatchedAddresses = (this.watchedAddresses.size > 0);
     const newBlocks: BlockVerbosity2[] = [];
     let chainBlockhash = bestBlockHash;
     for (let count = 0; count < maxAnalyzedBlocks; count += 1) {
       logger.info(`analyzeNewBlocks: getting parent block ${count} ${chainBlockhash}`);
       // eslint-disable-next-line no-await-in-loop
-      const block = await getBlock(chainBlockhash);
+      const block = await getBlock(chainBlockhash, hasWatchedAddresses);
       if (!block) {
         logger.info('analyzeNewBlocks: could not get block');
         return false;
@@ -777,7 +778,7 @@ class BitcoindWatcher extends EventEmitter {
       ])),
     );
     logger.info(`analyzeNewBlocks: ${this.watchedAddresses.size} watched addresses`);
-    if (this.watchedAddresses.size > 0) {
+    if (hasWatchedAddresses) {
       this.pushAnalyzeBlockSpendingAddressesTask({
         transactions,
         fullConfirmation: false,
@@ -846,7 +847,7 @@ class BitcoindWatcher extends EventEmitter {
 
     if (this.watchedAddresses.size > 0) {
       logger.info('analyzeNewBlocks: analyzing confirmed transactions for watched addresses');
-      const confirmedTransactions = await getBlockTransactions(confirmedBlockHashes);
+      const confirmedTransactions = await getBlockTransactions(confirmedBlockHashes, true);
       this.pushAnalyzeBlockSpendingAddressesTask({
         transactions: confirmedTransactions,
         fullConfirmation: true,

@@ -3,7 +3,7 @@ import fs from 'fs';
 import {
   authenticatedLndGrpc, AuthenticatedLnd, getChannels, subscribeToChannels,
   getForwards, subscribeToForwards, subscribeToInvoices, SubscribeToInvoicesInvoiceUpdatedEvent,
-  getNode, getWalletVersion,
+  getNode, getWalletInfo,
 } from 'lightning';
 import logger from './logger';
 import { LndChannelInformation } from '../models/settings';
@@ -367,8 +367,8 @@ class LndWatcher extends EventEmitter {
     if (!this.lnd) {
       return undefined;
     }
-    const x = await getWalletVersion({ lnd: this.lnd });
-    return x.version;
+    const getWalletInfoResult = await getWalletInfo({ lnd: this.lnd });
+    return getWalletInfoResult.version;
   }
 }
 

@@ -7,9 +7,9 @@ import { CursorPaginationBody, BodyWithRelationships } from '../utils/jsonapi';
 import { useInfiniteAuthQuery, useAuthQuery } from '../utils/query-hooks';
 
 interface UserAttributes {
-  telegramChatId: string;
   telegramFromId: string;
   telegramUsername: string;
+  telegramChatId: string;
   watchReboot: boolean;
   watchNewBlocks: boolean;
   watchPriceChange?: number;
@@ -17,6 +17,8 @@ interface UserAttributes {
   watchLightningChannelsOpened: boolean;
   watchLightningChannelsClosed: boolean;
   watchLightningForwards: boolean;
+  watchLightningInvoicesCreated: boolean;
+  watchLightningInvoicesPaid: boolean;
   permissionGroups: string[];
   createdAt: string;
   updatedAt: string;

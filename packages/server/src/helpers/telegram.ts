@@ -50,7 +50,7 @@ function prettyBlockHash(blockHash: string): string {
 }
 
 const sponsorship = `\n\n*Follow us on [Nostr \\(@woofbot\\)]\
-(https://snort.social/woofbot@protonmail.com.ln2.email)\
+(https://snort.social/p/woofbot@protonmail.com.ln2.email)\
  or on [Twitter \\(@woofbotapp\\)](https://twitter.com/woofbotapp)*`;
 
 const startMessage = `${escapeMarkdown(`\

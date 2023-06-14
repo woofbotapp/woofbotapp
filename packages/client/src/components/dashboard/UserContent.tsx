@@ -395,6 +395,16 @@ function UserContentByUserId({
                     {' '}
                     {data.data.attributes.watchLightningForwards ? 'On' : 'Off'}
                   </Typography>
+                  <Typography>
+                    Watch lightning invoices:
+                    {' '}
+                    {
+                      [
+                        ...data.data.attributes.watchLightningInvoicesCreated ? ['Created'] : [],
+                        ...data.data.attributes.watchLightningInvoicesPaid ? ['Paid'] : [],
+                      ].join(' & ') || 'Never'
+                    }
+                  </Typography>
                 </Paper>
               </Grid>
               <Grid item xs={12}>

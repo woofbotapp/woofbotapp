@@ -24,6 +24,8 @@ const listAttributes = [
   'watchLightningChannelsOpened',
   'watchLightningChannelsClosed',
   'watchLightningForwards',
+  'watchLightningInvoicesCreated',
+  'watchLightningInvoicesPaid',
   'permissionGroups',
   'updatedAt',
   'createdAt',

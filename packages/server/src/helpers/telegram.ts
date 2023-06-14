@@ -374,6 +374,16 @@ export class TelegrafManager {
           continue;
         }
         const messages: string[] = [];
+        switch (status) {
+          case TransactionStatus.PartialConfirmation:
+            messages.push('⛏️');
+            break;
+          case TransactionStatus.FullConfirmation:
+            messages.push('🚀');
+            break;
+          default:
+            messages.push('👀');
+        }
         const addressName = watchedAddress.nickname
           ? `${watchedAddress.nickname} (${watchedAddress.address})`
           : `${watchedAddress.address}`;
@@ -395,14 +405,14 @@ export class TelegrafManager {
         switch (status) {
           case TransactionStatus.PartialConfirmation:
             messages.push(
-              `This transaction has ${confirmations} ${
+              `This transaction has only ${confirmations} ${
                 (confirmations === 1) ? 'confirmation' : 'confirmations'
               } and is not yet fully confirmed.`,
             );
             break;
           case TransactionStatus.FullConfirmation:
             messages.push(
-              `🚀 This transaction has ${confirmations} ${
+              `This transaction has ${confirmations} ${
                 (confirmations === 1) ? 'confirmation' : 'confirmations'
               } and is fully confirmed.`,
             );

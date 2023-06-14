@@ -10,7 +10,7 @@ export default function Copyright() {
       {new Date().getFullYear()}
       .
       <br />
-      <ExternalLink href="https://snort.social/woofbot%40protonmail.com.ln2.email">
+      <ExternalLink href="https://snort.social/p/woofbot%40protonmail.com.ln2.email">
         Nostr
       </ExternalLink>
       {' | '}

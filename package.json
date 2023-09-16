@@ -11,7 +11,7 @@
     "yarn-audit-fix": "^9.3.7"
   },
   "scripts": {
-    "docker:create-network": "docker network create --subnet=172.18.0.0/16 woofbotnetwork",
+    "docker:create-network": "wrap() { if [ -z \"$(docker network list --filter name=woofbotnetwork -q)\" ]; then docker network create --subnet=172.18.0.0/16 woofbotnetwork; fi }; wrap",
     "docker:stop-container": "wrap () { if [ -n \"$(docker ps -a -q -f name=$1)\" ]; then docker stop $1 ; fi }; wrap",
     "docker:stop-all-containers": "yarn docker:stop-container woofbot-mongodb-dev-container && yarn docker:stop-container woofbot-container && yarn docker:stop-container woofbot-server-dev-container",
     "docker:clean": "yarn docker:stop-container woofbot-container && yarn docker:stop-container woofbot-server-dev-container && for IMAGE_ID in $(docker images -q 'woofbot/*'); do docker image rm $IMAGE_ID; done",
@@ -25,7 +25,7 @@
     "dev:server-docker": "wrap() { if [ -z \"$1\" ]; then echo 'Missing env file parameter'; exit 1; fi; if [ -z \"$(docker images -q 'woofbot/woofbot-server-dev')\" ]; then echo 'Server dev image not found, must run first: yarn docker:build-server-dev'; exit 1; fi; yarn docker:stop-container woofbot-server-dev && . $PWD/$1 && docker run --rm -i -t -p 8080:8080 -v $PWD/packages/server/src:/app/packages/server/src --env-file $PWD/$1 --name woofbot-server-dev-container woofbot/woofbot-server-dev; }; wrap",
     "dev:server:standalone": "yarn dev:server-docker .env.dev-standalone-docker",
     "dev:server:polar": "set -o allexport && source .env.dev-polar && set +o allexport && yarn server dev --verbose",
-    "dev:build": "yarn common lint && yarn common build && yarn client lint && yarn server lint && yarn docker:build-server-dev && echo '🚀 Dev environment was built successfully. You can now run in separated shells \"yarn dev:mongodb\", \"yarn dev:client\" and either:\n- \"yarn dev:bitcoind\", \"yarn dev:server:standalone\"\nOr\n- \"yarn dev:server:polar\" with a bitcoin node running by Polar (see https://lightningpolar.com)'",
+    "dev:build": "yarn common lint && yarn common build && yarn client lint && yarn server lint && yarn docker:build-server-dev && yarn docker:create-network && echo '🚀 Dev environment was built successfully. You can now run in separated shells \"yarn dev:mongodb\", \"yarn dev:client\" and either:\n- \"yarn dev:bitcoind\", \"yarn dev:server:standalone\"\nOr\n- \"yarn dev:server:polar\" with a bitcoin node running by Polar (see https://lightningpolar.com)'",
     "client": "yarn workspace @woofbot/client",
     "common": "yarn workspace @woofbot/common",
     "server": "yarn workspace @woofbot/server",

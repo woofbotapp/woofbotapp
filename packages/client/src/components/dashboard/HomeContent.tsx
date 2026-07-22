@@ -7,6 +7,7 @@ import Copyright from '../copyright/Copyright';
 import TelegramSettings from './TelegramSettings';
 import GeneralSettings from './GeneralSettings';
 import CommandsList from './CommandsList';
+import ConfigurationBackup from './ConfigurationBackup';
 
 export default function HomeContent() {
   return (
@@ -44,6 +45,14 @@ export default function HomeContent() {
         <Grid item xs={12} md={10} lg={10}>
           <Paper sx={{ p: 2, display: 'flex', flexDirection: 'column' }}>
             <CommandsList />
+          </Paper>
+        </Grid>
+        <Grid xs={0} md={1} lg={1} />
+        <Grid xs={0} md={1} lg={1} />
+        <Grid item xs={12} md={10} lg={10}>
+          <Paper sx={{ p: 2, display: 'flex', flexDirection: 'column' }}>
+            <Title>Configuration Backup</Title>
+            <ConfigurationBackup />
           </Paper>
         </Grid>
         <Grid xs={0} md={1} lg={1} />

@@ -7,6 +7,7 @@ import logger, { defaultLogFormat } from '../../helpers/logger';
 import { verifyAuthToken } from '../../models/refresh-tokens';
 import apiAuthRouter from './auth';
 import apiAuthLogoutRouter from './auth/logout';
+import apiConfigurationRouter from './configuration';
 import apiSettingsRouter from './settings';
 import apiUsersRouter from './users';
 
@@ -15,7 +16,8 @@ const rebootAt = new Date();
 const apiRouter = Router();
 
 apiRouter.use(expressJson({
-  limit: '100kb',
+  // Large enough for configuration imports with many users and watches.
+  limit: '1mb',
 }), (err, req, res, next) => {
   if (err instanceof SyntaxError) {
     logger.info(`Unparsable body: ${err.stack}`);
@@ -68,6 +70,8 @@ apiRouter.get('/ping', asyncHandler(async (req, res) => {
 }));
 
 apiRouter.use('/settings', apiSettingsRouter);
+
+apiRouter.use('/configuration', apiConfigurationRouter);
 
 apiRouter.get('/stats', asyncHandler(async (req, res) => {
   res.json({

@@ -8,6 +8,7 @@ export const apiRoutes = {
   settingsGeneral: '/api/settings/general',
   settingsTelegram: '/api/settings/telegram',
   settingsCommandsPermissionGroups: '/api/settings/commands-permission-groups',
+  configuration: '/api/configuration',
   stats: '/api/stats',
   users: '/api/users',
 };

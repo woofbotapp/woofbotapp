@@ -116,6 +116,28 @@ export const useGetSettingsCommandsPermissionGroups = () => useAuthQuery<
   () => api.get(apiRoutes.settingsCommandsPermissionGroups),
 );
 
+export const useMutationImportConfiguration = () => {
+  const queryClient = useQueryClient();
+  const mutation = useMutation(
+    (configuration: object) => api.post(apiRoutes.configuration, configuration),
+    {
+      onSuccess: () => {
+        successToast('The configuration was imported successfully');
+      },
+      onError: (error) => {
+        errorToast(
+          ((error instanceof HttpError) && error.message) || 'Internal error',
+        );
+      },
+      onSettled: () => {
+        // The import overrides everything, so refetch all queries.
+        queryClient.invalidateQueries();
+      },
+    },
+  );
+  return mutation;
+};
+
 export const useMutationCommandsPermissionGroups = () => {
   const queryClient = useQueryClient();
   const mutation = useMutation(
